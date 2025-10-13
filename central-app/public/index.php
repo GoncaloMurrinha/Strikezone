@@ -22,8 +22,9 @@ $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 /* ---------- API ---------- */
-if ($uri==='/api/register' && $method==='POST') { $api->register(); exit; }
+if ($uri === '/api/register.php') {require __DIR__.'/api/register.php'; exit;}
 if ($uri==='/api/login'    && $method==='POST') { $api->login(); exit; }
+if ($uri === '/register') { readfile(__DIR__ . '/register.html'); exit; }
 
 if ($uri==='/api/arena/create' && $method==='POST') { $api->arenaCreate(); exit; }
 if ($uri==='/api/arena/list'   && $method==='GET')  { $api->arenaList(); exit; }
