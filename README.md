@@ -24,19 +24,23 @@ Antes de começar, certifica-te de que tens instalados:
 
 ---
 
-## 🧩 Estrutura de pastas
+## 🗂️ Estrutura de pastas
+
 Strikezone/
 │
 ├── central-app/
 │ ├── public/ # Ficheiros acessíveis via navegador
 │ │ ├── index.php
-│ │ └── uploads/
+│ │ └── uploads/ # Diretório para ficheiros enviados
+│ │
 │ ├── src/ # Código-fonte PHP (controladores, utilitários)
 │ ├── sql/ # Scripts de criação da base de dados
 │ ├── vendor/ # Dependências Composer
 │ └── .env (opcional) # Configuração de ambiente
 │
 └── README.md
+
+---
 
 ## 🛠️ Passos de Instalação
 
