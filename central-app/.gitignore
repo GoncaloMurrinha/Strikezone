@@ -1,0 +1,12 @@
+# na raiz do repositório
+echo /central-app/vendor/>> .gitignore
+echo /central-app/public/uploads/>> .gitignore
+echo /central-app/public/uploads/maps/>> .gitignore
+echo /central-app/composer.lock>> .gitignore  # opcional: se quiseres bloquear versões, NÃO ignores o lock
+
+# remover do índice o que já entrou (mantém ficheiros no disco)
+git rm -r --cached central-app/vendor
+git rm -r --cached central-app/public/uploads
+
+git add .gitignore
+git commit -m "chore: ignore vendor e uploads; remover repo embutido"
