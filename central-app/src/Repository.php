@@ -51,6 +51,15 @@ final class Repository {
     $st = $this->pdo->prepare('SELECT * FROM beacons WHERE arena_id=?');
     $st->execute([$arenaId]); return $st->fetchAll();
   }
+  public function getBeaconFloorsMap(int $arenaId): array {
+    $rows = $this->findBeaconsByArena($arenaId);
+    $map = [];
+    foreach ($rows as $row) {
+      $key = strtolower($row['uuid']).':'.(int)$row['major'].':'.(int)$row['minor'];
+      $map[$key] = (int)$row['floor'];
+    }
+    return $map;
+  }
   public function beaconFloorLookup(int $arenaId, string $uuid, int $major, int $minor): ?int {
     $st = $this->pdo->prepare('SELECT floor FROM beacons WHERE arena_id=? AND uuid=? AND major=? AND minor=?');
     $st->execute([$arenaId,$uuid,$major,$minor]);

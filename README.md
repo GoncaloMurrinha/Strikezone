@@ -49,12 +49,74 @@ Strikezone/
 ```bash
 git clone https://github.com/Goncalo-Murrinha/Strikezone.git
 cd Strikezone/central-app
-```forma mais rapida de inicializar 
-git clone https://github.com/Goncalo-Murrinha/Strikezone.git
-cd Strikezone/central-app
-composer install
-& "C:\xampp\mysql\bin\mysql.exe" -u root -p airsoft_central < .\sql\schema.sql
-Start-Service Memurai
-php -S 0.0.0.0:8080 -t public
+```
 
-http://localhost:8080
+### 2️⃣ Instalar dependências (Composer)
+
+```bash
+composer install
+```
+
+### 3️⃣ Criar base de dados a partir do schema
+
+- Windows (XAMPP):
+```powershell
+& "C:\xampp\mysql\bin\mysql.exe" -u root -p < .\sql\schema.sql
+```
+
+- Linux/macOS:
+```bash
+mysql -u root -p < ./sql/schema.sql
+```
+
+### 4️⃣ Iniciar Redis/Memurai
+
+- Windows (Memurai):
+```powershell
+Start-Service Memurai
+```
+- Linux/macOS (Redis):
+```bash
+redis-server
+```
+
+### 5️⃣ Arrancar o servidor PHP (dev)
+
+```bash
+php -S 0.0.0.0:8080 -t public
+```
+
+Abrir: http://localhost:8080
+
+## 🧪 Testes unitários
+
+- Como correr:
+
+  - `php central-app/test.php`
+
+- O que é testado:
+  - `FloorEngine` — lógica de decisão de piso e histerese.
+  - `Jwt` — assinatura e verificação (roundtrip e falha com secret errado).
+  - `helpers` — extração do token do header Authorization.
+  - `ApiController::randomCode` — tamanho e charset.
+
+- Como funciona o runner:
+  - Framework minimalista em `central-app/tests/_framework.php` com `register_test` e asserts (`assert_eq`, `assert_true`, `assert_same`).
+  - Os ficheiros `*Test.php` registam testes via `register_test('nome', fn(){ ... })`.
+  - `central-app/test.php` carrega todos os `*Test.php` e executa-os, mostrando ✔/✘ e devolvendo código de saída 0/1.
+
+## 🚀 Otimizações de performance
+
+- Lookup de beacons em lote no endpoint `/api/scan` (evita N queries por leitura):
+  - Implementado em `central-app/src/Repository.php` com `getBeaconFloorsMap()`.
+  - Usado em `central-app/src/ApiController.php` dentro de `submitScan()`.
+- Conexões PDO persistentes para reduzir overhead de reconexão:
+  - Ativado em `central-app/src/config.php` via `PDO::ATTR_PERSISTENT => true`.
+- Micro‑otimização no `FloorEngine` para evitar `array_sum` desnecessário.
+
+Sugestão opcional (DB): adicionar índice em `beacons(arena_id)` para acelerar listagens por arena.
+
+## 🧩 Dicas
+
+- Configurações: `central-app/src/config.php` (DB, Redis/Memurai, uploads, JWT).
+- Endpoints e UI: `central-app/public/index.php` (roteamento simples em PHP embutido).

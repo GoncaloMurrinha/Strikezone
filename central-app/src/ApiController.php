@@ -178,13 +178,18 @@ final class ApiController {
       json_out(['error'=>'invalid_input'],422); return;
     }
 
-    // Lookup de floors por beacon
+    // Lookup de floors por beacon (1 query por arena em vez de N por reading)
+    $floorsMap = $this->repo->getBeaconFloorsMap($arenaId);
     $mapped = [];
     $rssiSum=0; $rssiCnt=0;
     foreach ($reads as $r) {
-      $uuid = (string)$r['uuid']; $major=(int)$r['major']; $minor=(int)$r['minor']; $rssi=(int)$r['rssi'];
-      $floor = $this->repo->beaconFloorLookup($arenaId, $uuid, $major, $minor);
-      if ($floor===null) continue;
+      $uuid = strtolower((string)$r['uuid']);
+      $major=(int)$r['major'];
+      $minor=(int)$r['minor'];
+      $rssi=(int)$r['rssi'];
+      $key = $uuid.':'.$major.':'.$minor;
+      if (!array_key_exists($key, $floorsMap)) continue;
+      $floor = (int)$floorsMap[$key];
       $mapped[] = ['uuid'=>$uuid,'major'=>$major,'minor'=>$minor,'rssi'=>$rssi,'floor'=>$floor];
       $rssiSum += $rssi; $rssiCnt++;
     }
