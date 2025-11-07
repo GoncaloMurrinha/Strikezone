@@ -39,10 +39,11 @@ if ($uri==='/api/scan' && $method==='POST') { $api->submitScan(); exit; }
 /* ---------- OWNER UI ---------- */
 function page_header($title='Owner'){
   echo "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>";
-  echo "<title>".htmlspecialchars($title)."</title><link rel='stylesheet' href='/assets/style.css'></head><body><div class='wrap'>";
-  echo "<h1>$title</h1><p><a href='/owner'>Dashboard</a> | <a href='/owner/maps'>Mapas</a> | <a href='/owner/logout'>Sair</a></p><hr>";
+  echo "<link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css' rel='stylesheet'>";
+  echo "<title>".htmlspecialchars($title)."</title><link rel='stylesheet' href='/assets/style.css'></head><body data-bs-theme='dark' class='bg-dark text-light'><div class='wrap'>";
+  echo "<h1 class='h3'>$title</h1><p><a href='/owner'>Dashboard</a> | <a href='/owner/maps'>Mapas</a> | <a href='/owner/logout'>Sair</a></p><hr>";
 }
-function page_footer(){ echo "</div></body></html>"; }
+function page_footer(){ echo "</div><script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'></script></body></html>"; }
 
 if ($uri==='/owner/login') {
   if ($method==='POST') {
@@ -50,7 +51,7 @@ if ($uri==='/owner/login') {
     if ($ok) { header('Location: /owner'); exit; }
     $err = "Credenciais inválidas";
   }
-  echo "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><link rel='stylesheet' href='/assets/style.css'><title>Login — Dono</title></head><body class='wrap'>";
+  echo "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css' rel='stylesheet'><link rel='stylesheet' href='/assets/style.css'><title>Login — Dono</title></head><body data-bs-theme='dark' class='bg-dark text-light wrap'>";
   echo "<h1>Login — Dono do Campo</h1>";
   if (!empty($err)) echo "<p class='err'>$err</p>";
   echo "<form method='post' class='form-grid' style='max-width:420px'>
@@ -74,16 +75,22 @@ if ($uri==='/owner') {
   page_header("Painel do Campo");
   echo "<h2>Os meus Campos</h2>";
   if (!$arenas) echo "<p>(ainda sem campos)</p>";
-  echo "<ul>";
+  echo "<ul class='list-group mb-3'>";
   foreach ($arenas as $a) {
-    echo "<li><b>".htmlspecialchars($a['name'])."</b> — <a href='/owner/arena/".$a['id']."'>abrir</a></li>";
+    echo "<li class='list-group-item bg-transparent text-light d-flex justify-content-between align-items-center'>".
+         "<span><b>".htmlspecialchars($a['name'])."</b></span>".
+         "<a class='btn btn-sm btn-outline-light' href='/owner/arena/".$a['id']."'>Abrir</a>".
+         "</li>";
   }
   echo "</ul>";
   echo "<h3>Novo Campo</h3>
-    <form method='post'>
+    <form method='post' class='row g-3' style='max-width:540px'>
       <input type='hidden' name='create_arena' value='1'>
-      <label>Nome do Campo <input name='arena_name' required></label>
-      <button type='submit'>Criar</button>
+      <div class='col-12'>
+        <label class='form-label'>Nome do Campo</label>
+        <input class='form-control' name='arena_name' required>
+      </div>
+      <div class='col-12'><button type='submit' class='btn btn-success'>Criar</button></div>
     </form>";
   page_footer(); exit;
 }
@@ -111,10 +118,10 @@ if (preg_match('#^/owner/arena/(\d+)$#', $uri, $m)) {
   $maps = $repo->listMapsByArena($arenaId);
 
   page_header("Campo #$arenaId");
-  echo "<p><a href='/owner'>&larr; voltar</a></p>";
+  echo "<p><a class='link-light' href='/owner'>&larr; voltar</a></p>";
   echo "<h2>Jogos</h2>";
   if (!$matches) echo "<p>(ainda sem jogos)</p>";
-  echo "<table class='tbl'><thead><tr><th>ID</th><th>Nome</th><th>Início</th><th>Equipas</th><th>Códigos</th><th></th></tr></thead><tbody>";
+  echo "<table class='table table-dark table-striped table-hover table-sm'><thead><tr><th>ID</th><th>Nome</th><th>Início</th><th>Equipas</th><th>Códigos</th><th></th></tr></thead><tbody>";
   foreach ($matches as $mrow) {
     echo "<tr>
       <td>{$mrow['id']}</td>
@@ -128,20 +135,20 @@ if (preg_match('#^/owner/arena/(\d+)$#', $uri, $m)) {
   echo "</tbody></table>";
 
   echo "<h3>Novo Jogo</h3>
-    <form method='post' class='form-grid'>
+    <form method='post' class='row g-3'>
       <input type='hidden' name='create_match' value='1'>
-      <label>Nome <input name='name' required></label>
-      <label>Início (YYYY-MM-DD HH:MM:SS) <input name='starts_at' required></label>
-      <label>Equipa A <input name='team_a' value='Azuis'></label>
-      <label>Equipa B <input name='team_b' value='Vermelhos'></label>
-      <button type='submit'>Criar</button>
+      <div class='col-md-6'><label class='form-label'>Nome</label><input class='form-control' name='name' required></div>
+      <div class='col-md-6'><label class='form-label'>Início (YYYY-MM-DD HH:MM:SS)</label><input class='form-control' name='starts_at' required></div>
+      <div class='col-md-6'><label class='form-label'>Equipa A</label><input class='form-control' name='team_a' value='Azuis'></div>
+      <div class='col-md-6'><label class='form-label'>Equipa B</label><input class='form-control' name='team_b' value='Vermelhos'></div>
+      <div class='col-12'><button type='submit' class='btn btn-success'>Criar</button></div>
     </form>";
 
   echo "<h3>Mapas por piso</h3>";
   if ($maps){
-    echo "<ul>";
+    echo "<ul class='list-group'>";
     foreach ($maps as $mp){
-      echo "<li>Piso ".(int)$mp['floor']." — <a href='".htmlspecialchars($mp['map_url'])."' target='_blank'>abrir</a></li>";
+      echo "<li class='list-group-item bg-transparent text-light'>Piso ".(int)$mp['floor']." — <a class='link-light' href='".htmlspecialchars($mp['map_url'])."' target='_blank'>abrir</a></li>";
     }
     echo "</ul>";
   } else {
@@ -163,14 +170,14 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
   $maps = $repo->listMapsByArena((int)$match['arena_id']);
 
   page_header("Ao vivo — Match #$matchId");
-  echo "<p><a href='/owner/arena/{$match['arena_id']}'>&larr; voltar</a></p>";
+  echo "<p><a class='link-light' href='/owner/arena/{$match['arena_id']}'>&larr; voltar</a></p>";
   echo "<h2>".htmlspecialchars($match['name'])."</h2>";
   echo "<p><b>A:</b> ".htmlspecialchars($match['team_a_name'])." &nbsp; <b>B:</b> ".htmlspecialchars($match['team_b_name'])."</p>";
   echo "<p>Códigos — A=<code>{$match['team_a_code']}</code> &nbsp; B=<code>{$match['team_b_code']}</code></p>";
 
-  echo "<div id='live' style='display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start'>";
-  echo "<section><h3>Equipa A</h3><ul id='teamA'></ul></section>";
-  echo "<section><h3>Equipa B</h3><ul id='teamB'></ul></section>";
+  echo "<div id='live' class='row g-3 align-items-start'>";
+  echo "<section class='col-md-6'><h3 class='h5'>Equipa A</h3><ul id='teamA' class='list-group'></ul></section>";
+  echo "<section class='col-md-6'><h3 class='h5'>Equipa B</h3><ul id='teamB' class='list-group'></ul></section>";
   echo "</div>";
 
   if ($maps){
@@ -193,6 +200,7 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
       arr.sort((x,y)=> (x.side.localeCompare(y.side)) || (x.name.localeCompare(y.name)));
       for (const it of arr){
         const li = document.createElement('li');
+        li.className = 'list-group-item bg-transparent text-light';
         li.textContent = it.name + ' — piso: ' + (it.floor??'—') + (it.conf?(' ('+Math.round(it.conf*100)+'%)'):'');
         (it.side==='A'?A:B).appendChild(li);
       }
@@ -241,23 +249,96 @@ if ($uri==='/owner/maps') {
   page_header("Mapas do Campo");
   echo "<h2>Carregar mapa por piso</h2>";
   if (!$arenas) echo "<p>(cria primeiro um Campo)</p>";
-  echo "<form method='post' enctype='multipart/form-data' class='form-grid'>
+  echo "<form method='post' enctype='multipart/form-data' class='row g-3' style='max-width:700px'>
     <input type='hidden' name='upload_map' value='1'>
-    <label>Campo <select name='arena_id' required>";
+    <div class='col-md-6'><label class='form-label'>Campo</label><select class='form-select' name='arena_id' required>";
   foreach ($arenas as $a) echo "<option value='{$a['id']}'>".htmlspecialchars($a['name'])."</option>";
-  echo "</select></label>
-    <label>Piso <input type='number' name='floor' required></label>
-    <label>Ficheiro (png/jpg/webp/svg, max ".(int)$config['uploads']['max_mb']."MB) <input type='file' name='mapfile' required></label>
-    <button type='submit'>Upload</button>
+  echo "</select></div>
+    <div class='col-md-3'><label class='form-label'>Piso</label><input class='form-control' type='number' name='floor' required></div>
+    <div class='col-md-9'><label class='form-label'>Ficheiro (png/jpg/webp/svg, max ".(int)$config['uploads']['max_mb']."MB)</label><input class='form-control' type='file' name='mapfile' required></div>
+    <div class='col-12'><button type='submit' class='btn btn-primary'>Upload</button></div>
   </form>";
   page_footer(); exit;
 }
-
 /* ---------- HOME ---------- */
-echo "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><link rel='stylesheet' href='/assets/style.css'><title>StrikeZone Central</title></head><body class='wrap'>";
-echo "<h1>StrikeZone — Central</h1>
-<p>API & Dashboard. Entra como <a href='/owner/login'>Dono do Campo</a>.</p>
-<pre>
+echo "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>";
+echo "<title>StrikeZone Central</title>";
+echo "<link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css' rel='stylesheet'>";
+echo "<link rel='stylesheet' href='/assets/style.css'>";
+echo "</head><body data-bs-theme='dark' class='bg-dark text-light'>";
+
+/* ---------- HERO ---------- */
+echo "<section class='py-5 bg-black border-bottom border-secondary'>";
+echo "  <div class='container'>";
+echo "    <div class='row align-items-center g-4'>";
+echo "      <div class='col-lg-6'>";
+echo "        <h1 class='display-6 fw-semibold'>StrikeZone — Central</h1>";
+echo "        <p class='lead text-secondary'>Plataforma central para jogos de airsoft com localização indoor por beacons, streaming em tempo real e gestão de partidas.</p>";
+echo "        <div class='d-flex gap-2'>";
+echo "          <a class='btn btn-primary btn-lg' href='/owner/login'>Entrar como Dono</a>";
+echo "          <a class='btn btn-outline-light btn-lg' href='#api'>Ver API</a>";
+echo "        </div>";
+echo "      </div>";
+echo "      <div class='col-lg-6 text-center'>";
+echo "        <img class='img-fluid rounded border border-secondary shadow' alt='Jogadores de airsoft' src='/assets/FotoEquipa.jpeg'>";
+echo "      </div>";
+echo "    </div>";
+echo "  </div>";
+echo "</section>";
+
+// Features
+echo "<section class='py-5'>";
+echo "  <div class='container'>";
+echo "    <div class='row g-4'>";
+echo "      <div class='col-md-4'>";
+echo "        <div class='card h-100 bg-black border-secondary'>";
+echo "          <img class='card-img-top' alt='Beacons BLE' src='/assets/BLE.jpeg'>";
+echo "          <div class='card-body'>";
+echo "            <h3 class='h5 card-title'>Localização Indoor</h3>";
+echo "            <p class='card-text text-secondary'>Integração com beacons BLE para determinar o piso dos jogadores com heurística de confiança.</p>";
+echo "          </div>";
+echo "        </div>";
+echo "      </div>";
+echo "      <div class='col-md-4'>";
+echo "        <div class='card h-100 bg-black border-secondary'>";
+echo "          <img class='card-img-top' alt='Gestão de equipas' src='/assets/GestãodeEquipas.png'>";
+echo "          <div class='card-body'>";
+echo "            <h3 class='h5 card-title'>Gestão de Partidas</h3>";
+echo "            <p class='card-text text-secondary'>Cria arenas, jogos e equipas com códigos de entrada. Acompanha o roster em tempo real.</p>";
+echo "          </div>";
+echo "        </div>";
+echo "      </div>";
+echo "      <div class='col-md-4'>";
+echo "        <div class='card h-100 bg-black border-secondary'>";
+echo "          <img class='card-img-top' alt='Streaming de dados' src='/assets/Taticas.png'>";
+echo "          <div class='card-body'>";
+echo "            <h3 class='h5 card-title'>Tempo Real</h3>";
+echo "            <p class='card-text text-secondary'>Publicação via Redis/Memurai e consumo por Server‑Sent Events para dashboards ao vivo.</p>";
+echo "          </div>";
+echo "        </div>";
+echo "      </div>";
+echo "    </div>";
+echo "  </div>";
+echo "</section>";
+
+// How it works
+echo "<section class='py-5 border-top border-secondary'>";
+echo "  <div class='container'>";
+echo "    <h2 class='h4 mb-3'>Como Funciona</h2>";
+echo "    <ol class='text-secondary'>";
+echo "      <li>Jogadores enviam scans de beacons para a API com o RSSI observado.</li>";
+echo "      <li>O servidor mapeia cada beacon para um piso da arena e decide o piso atual (histerese).</li>";
+echo "      <li>O estado do jogador é persistido e a posição é publicada em canais Redis (equipa/jogo).</li>";
+echo "      <li>O dashboard consome os eventos em SSE e atualiza a posição em tempo real.</li>";
+echo "    </ol>";
+echo "  </div>";
+echo "</section>";
+
+// API section
+echo "<section id='api' class='py-5'>";
+echo "  <div class='container'>";
+echo "    <h2 class='h4 mb-3'>API (Resumo)</h2>";
+echo "    <pre class='bg-black border border-secondary rounded p-3 mb-0'>
 POST /api/register   {email,password,display_name}
 POST /api/login      {email,password}
 POST /api/arena/create  (Bearer)
@@ -268,4 +349,7 @@ POST /api/match/join    (Bearer)
 GET  /api/match/roster?match_id=... (Bearer)
 POST /api/scan          (Bearer)
 </pre>";
-echo "</body></html>";
+echo "  </div>";
+echo "</section>";
+
+echo "<script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'></script></body></html>";
