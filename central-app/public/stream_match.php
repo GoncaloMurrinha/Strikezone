@@ -26,7 +26,16 @@ if ($mr->get($stopKey)!==null) {
 }
 echo "event: hello\ndata: ".json_encode(['ok'=>true,'match_id'=>$matchId])."\n\n"; @ob_flush(); @flush();
 
-$mr->subscribeLoop($chan, function(string $payload){
+$mr->subscribeLoop($chan, function(string $payload) use ($matchId){
+  $t = ltrim($payload);
+  if ($t !== '' && $t[0] === '{') {
+    $j = json_decode($payload, true);
+    if (is_array($j) && isset($j['ctrl']) && $j['ctrl']==='stop') {
+      echo "event: stopped\ndata: {\"match_id\":$matchId}\n\n";
+      @ob_flush(); @flush();
+      exit;
+    }
+  }
   echo "event: pos\ndata: $payload\n\n";
   @ob_flush(); @flush();
   if (function_exists('connection_aborted') && connection_aborted()) { exit; }

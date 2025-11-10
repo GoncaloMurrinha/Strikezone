@@ -85,6 +85,11 @@ if ($uri==='/owner/match/stop' && $method==='POST') {
   $mr = new MiniRedis($config['redis']['host'], (int)$config['redis']['port'], (float)$config['redis']['timeout']);
   $stopKey = ($config['redis']['prefix'] ?? 'airsoft:') . "match:$mid:stopped";
   $mr->set($stopKey,'1', 86400);
+  // publish immediate stop to match + team channels so SSE exits at once
+  $prefix = ($config['redis']['prefix'] ?? 'airsoft:');
+  $mr->publish($prefix."match:$mid", json_encode(['ctrl'=>'stop']));
+  $mr->publish($prefix."team:".($mid*10+1), json_encode(['ctrl'=>'stop']));
+  $mr->publish($prefix."team:".($mid*10+2), json_encode(['ctrl'=>'stop']));
   header('Location: /owner/match/'.$mid); exit;
 }
 if ($uri==='/owner/match/start' && $method==='POST') {
@@ -228,6 +233,10 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
 
   $members = $repo->listMembersByMatch($matchId);
   $maps = $repo->listMapsByArena((int)$match['arena_id']);
+  // estado via kill switch
+  $mr = new MiniRedis($config['redis']['host'], (int)$config['redis']['port'], (float)$config['redis']['timeout']);
+  $stopKey = ($config['redis']['prefix'] ?? 'airsoft:') . "match:$matchId:stopped";
+  $isStopped = ($mr->get($stopKey)!==null);
 
   page_header("Ao vivo — Match #$matchId");
   echo "<p><a class='link-light' href='/owner/arena/{$match['arena_id']}'>&larr; voltar</a></p>";
@@ -236,8 +245,9 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
   echo "<p>Códigos — A=<code>{$match['team_a_code']}</code> &nbsp; B=<code>{$match['team_b_code']}</code></p>";
 
   echo "<div class='d-flex align-items-center gap-2 mb-3'>";
-  echo "  <form method='post' action='/owner/match/stop' class='d-inline'><input type='hidden' name='match_id' value='".$matchId."'><button class='btn btn-outline-warning btn-sm'>Parar partida</button></form>";
-  echo "  <form method='post' action='/owner/match/start' class='d-inline'><input type='hidden' name='match_id' value='".$matchId."'><button class='btn btn-outline-success btn-sm'>Iniciar partida</button></form>";
+  echo "  <span id='matchStatus' class='badge ".($isStopped?"text-bg-secondary":"text-bg-success")."'>Estado: ".($isStopped?"Parado":"Ao vivo")."</span>";
+  echo "  <form id='stopForm' method='post' action='/owner/match/stop' class='d-inline'><input type='hidden' name='match_id' value='".$matchId."'><button id='btnStop' class='btn btn-outline-warning btn-sm'".($isStopped?" disabled":"").">Parar partida</button></form>";
+  echo "  <form id='startForm' method='post' action='/owner/match/start' class='d-inline'><input type='hidden' name='match_id' value='".$matchId."'><button id='btnStart' class='btn btn-outline-success btn-sm'".(!$isStopped?" disabled":"").">Iniciar partida</button></form>";
   echo "</div>";
   echo "<div id='live' class='row g-3 align-items-start'>";
   echo "<section class='col-md-6'><h3 class='h5'>Equipa A</h3><ul id='teamA' class='list-group'></ul></section>";
@@ -278,7 +288,7 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
       }catch(e){}
     });
   </script>";
-  // server-side kill switch controls; no client JS needed here
+  echo "<script>\n    (function(){\n      var stopForm = document.getElementById('stopForm');\n      var startForm = document.getElementById('startForm');\n      var badge = document.getElementById('matchStatus');\n      var btnStop = document.getElementById('btnStop');\n      var btnStart = document.getElementById('btnStart');\n      function setBadge(text, cls){ badge.textContent = 'Estado: '+text; badge.className = 'badge '+cls; }\n      function disableBoth(dis){ if(btnStop) btnStop.disabled = dis; if(btnStart) btnStart.disabled = dis; }\n      function postForm(action){\n        var fd = new URLSearchParams();\n        fd.set('match_id', String(matchId));\n        return fetch(action, { method:'POST', body:fd, credentials:'same-origin', redirect:'follow' });\n      }\n      if (stopForm) stopForm.addEventListener('submit', function(ev){\n        ev.preventDefault();\n        disableBoth(true);\n        setBadge('A parar…', 'text-bg-warning');\n        try{ if (typeof es !== 'undefined' && es && es.close) es.close(); }catch(e){}\n        postForm(stopForm.action).finally(function(){\n          setBadge('Parado', 'text-bg-secondary');\n          disableBoth(false);\n          if(btnStop) btnStop.disabled = true;\n          if(btnStart) btnStart.disabled = false;\n        });\n      });\n      if (startForm) startForm.addEventListener('submit', function(ev){\n        ev.preventDefault();\n        disableBoth(true);\n        setBadge('A iniciar…', 'text-bg-info');\n        postForm(startForm.action).finally(function(){\n          setBadge('Ao vivo', 'text-bg-success');\n          disableBoth(false);\n          if(btnStop) btnStop.disabled = false;\n          if(btnStart) btnStart.disabled = true;\n        });\n      });\n    })();\n  </script>";
 
   page_footer(); exit;
 }
