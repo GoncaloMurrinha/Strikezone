@@ -41,9 +41,24 @@ final class MiniRedis {
     $this->send(['PUBLISH', $chan, $msg]);
     return (int)$this->readResp();
   }
+  public function get(string $key): ?string {
+    $this->send(['GET', $key]);
+    $resp = $this->readResp();
+    if ($resp === null) return null;
+    return (string)$resp;
+  }
+  public function set(string $key, string $val, ?int $ttl=null): void {
+    if ($ttl !== null) { $this->send(['SET', $key, $val, 'EX', (int)$ttl]); }
+    else { $this->send(['SET', $key, $val]); }
+    $this->readResp();
+  }
+  public function del(string $key): int {
+    $this->send(['DEL', $key]);
+    return (int)$this->readResp();
+  }
   public function subscribeLoop(string $chan, callable $onMessage): void {
     $this->send(['SUBSCRIBE', $chan]);
-    // lê a confirmação de subscrição
+    // read subscription confirmation
     $this->readResp();
     while (!feof($this->sock)) {
       $resp = $this->readResp();

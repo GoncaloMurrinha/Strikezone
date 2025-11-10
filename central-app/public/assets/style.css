@@ -10,3 +10,39 @@ hr{border:0;border-top:1px solid #333;margin:12px 0}
 input,select,button{padding:8px;border:1px solid #333;background:#111;color:#eee;border-radius:6px}
 button{cursor:pointer}
 .err{color:#ff6}
+
+/* --- Owner Login Page (body has class 'wrap' only on login) --- */
+body.wrap{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;background:radial-gradient(1200px 600px at 100% -10%, rgba(154,205,50,.15), rgba(0,0,0,0)) , #0b0b0b}
+body.wrap h1{margin-bottom:16px;text-align:center}
+body.wrap .err{background:#3b2a00;border:1px solid #5c4300;color:#ffd98e;padding:8px 12px;border-radius:8px}
+body.wrap .form-grid{grid-template-columns:1fr;gap:12px;width:100%;max-width:460px;background:rgba(0,0,0,.55);border:1px solid #222;padding:24px 22px;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.45);backdrop-filter:blur(4px)}
+body.wrap .form-grid label{font-weight:600;font-size:.96rem;margin-bottom:4px}
+body.wrap .form-grid input{margin-top:6px;padding:12px 12px;border-radius:10px;border:1px solid #2a2a2a;background:#101010;color:#eee;transition:border-color .15s ease, box-shadow .15s ease}
+body.wrap .form-grid input:focus{outline:none;border-color:#9acd32;box-shadow:0 0 0 3px rgba(154,205,50,.18)}
+body.wrap button{padding:12px 14px;border-radius:12px;border:1px solid #6cae1a;background:linear-gradient(180deg,#9acd32,#6cae1a);color:#101;font-weight:700;letter-spacing:.2px}
+body.wrap button:hover{filter:brightness(1.05)}
+body.wrap a{color:#cfea8a}
+
+/* --- Owner UI: header/nav + dashboard --- */
+body.owner-ui .owner-navbar{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,rgba(20,20,20,.95),rgba(14,14,14,.95));border-bottom:1px solid #222;backdrop-filter:blur(6px)}
+body.owner-ui .owner-nav-inner{max-width:1100px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;justify-content:space-between}
+body.owner-ui .owner-navbar .brand{font-weight:800;letter-spacing:.2px;color:#cfea8a}
+body.owner-ui .owner-nav-links a{color:#cfd6b8;margin-left:14px;text-decoration:none;padding:6px 10px;border-radius:8px;border:1px solid transparent}
+body.owner-ui .owner-nav-links a:hover{border-color:#2a2a2a;background:#111}
+body.owner-ui .page-title{margin-top:16px;margin-bottom:18px}
+
+/* Dashboard layout */
+body.owner-ui .dashboard-layout{display:grid;grid-template-columns:2fr 1fr;gap:18px}
+@media (max-width: 900px){body.owner-ui .dashboard-layout{grid-template-columns:1fr}}
+
+/* Card */
+body.owner-ui .dash-card{background:rgba(0,0,0,.5);border:1px solid #222;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+body.owner-ui .dash-card-header{padding:14px 16px;border-bottom:1px solid #222;display:flex;align-items:center;justify-content:space-between}
+body.owner-ui .dash-card-body{padding:16px}
+body.owner-ui .count-badge{font-size:.85rem;color:#101;background:#cfea8a;border:1px solid #9acd32;padding:2px 8px;border-radius:999px;margin-left:8px}
+body.owner-ui .empty.muted{opacity:.7}
+
+/* Arenas list polish */
+body.owner-ui .modern-list .list-group-item{border-color:#222}
+body.owner-ui .modern-list .list-group-item:hover{background:#0f0f0f}
+body.owner-ui .arena-name{font-weight:600}

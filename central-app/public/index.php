@@ -6,6 +6,7 @@ require __DIR__ . '/../src/helpers.php';
 require __DIR__ . '/../src/Repository.php';
 require __DIR__ . '/../src/FloorEngine.php';
 require __DIR__ . '/../src/Jwt.php';
+require __DIR__ . '/../src/MiniRedis.php';
 require __DIR__ . '/../src/Realtime.php';
 require __DIR__ . '/../src/ApiController.php';
 require __DIR__ . '/../src/OwnerAuth.php';
@@ -40,8 +41,16 @@ if ($uri==='/api/scan' && $method==='POST') { $api->submitScan(); exit; }
 function page_header($title='Owner'){
   echo "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>";
   echo "<link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css' rel='stylesheet'>";
-  echo "<title>".htmlspecialchars($title)."</title><link rel='stylesheet' href='/assets/style.css'></head><body data-bs-theme='dark' class='bg-dark text-light'><div class='wrap'>";
-  echo "<h1 class='h3'>$title</h1><p><a href='/owner'>Dashboard</a> | <a href='/owner/maps'>Mapas</a> | <a href='/owner/logout'>Sair</a></p><hr>";
+  echo "<title>".htmlspecialchars($title)."</title><link rel='stylesheet' href='/assets/style.css'></head><body data-bs-theme='dark' class='owner-ui bg-dark text-light'>";
+  echo "<header class='owner-navbar'><div class='owner-nav-inner'>";
+  echo "  <div class='brand'>Strikezone</div>";
+  echo "  <nav class='owner-nav-links'>";
+  echo "    <a href='/owner'>Dashboard</a>";
+  echo "    <a href='/owner/maps'>Mapas</a>";
+  echo "    <a href='/owner/logout'>Sair</a>";
+  echo "  </nav>";
+  echo "</div></header>";
+  echo "<div class='wrap'><h1 class='page-title h3'>".htmlspecialchars($title)."</h1>";
 }
 function page_footer(){ echo "</div><script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'></script></body></html>"; }
 
@@ -64,8 +73,37 @@ if ($uri==='/owner/login') {
 
 if ($uri==='/owner/logout') { $auth->logout(); header('Location: /owner/login'); exit; }
 
+// Owner match kill switch endpoints
+if ($uri==='/owner/match/stop' && $method==='POST') {
+  $ownerId = $auth->requireOwner();
+  if (session_status()===PHP_SESSION_ACTIVE) { @session_write_close(); }
+  $mid = (int)($_POST['match_id'] ?? 0);
+  $match = $repo->getMatchById($mid);
+  if ($mid<=0 || !$match) { http_response_code(422); exit('invalid_match'); }
+  $ok=false; foreach ($repo->listArenasByOwner($ownerId) as $a) if ((int)$a['id']===(int)$match['arena_id']) $ok=true;
+  if (!$ok){ http_response_code(403); exit('forbidden'); }
+  $mr = new MiniRedis($config['redis']['host'], (int)$config['redis']['port'], (float)$config['redis']['timeout']);
+  $stopKey = ($config['redis']['prefix'] ?? 'airsoft:') . "match:$mid:stopped";
+  $mr->set($stopKey,'1', 86400);
+  header('Location: /owner/match/'.$mid); exit;
+}
+if ($uri==='/owner/match/start' && $method==='POST') {
+  $ownerId = $auth->requireOwner();
+  if (session_status()===PHP_SESSION_ACTIVE) { @session_write_close(); }
+  $mid = (int)($_POST['match_id'] ?? 0);
+  $match = $repo->getMatchById($mid);
+  if ($mid<=0 || !$match) { http_response_code(422); exit('invalid_match'); }
+  $ok=false; foreach ($repo->listArenasByOwner($ownerId) as $a) if ((int)$a['id']===(int)$match['arena_id']) $ok=true;
+  if (!$ok){ http_response_code(403); exit('forbidden'); }
+  $mr = new MiniRedis($config['redis']['host'], (int)$config['redis']['port'], (float)$config['redis']['timeout']);
+  $stopKey = ($config['redis']['prefix'] ?? 'airsoft:') . "match:$mid:stopped";
+  $mr->del($stopKey);
+  header('Location: /owner/match/'.$mid); exit;
+}
+
 if ($uri==='/owner') {
   $ownerId = $auth->requireOwner();
+  if (session_status()===PHP_SESSION_ACTIVE) { @session_write_close(); }
   if ($method==='POST' && isset($_POST['create_arena'])) {
     $name = trim($_POST['arena_name'] ?? '');
     if ($name!=='') $repo->createArena($ownerId,$name);
@@ -73,30 +111,51 @@ if ($uri==='/owner') {
   }
   $arenas = $repo->listArenasByOwner($ownerId);
   page_header("Painel do Campo");
-  echo "<h2>Os meus Campos</h2>";
-  if (!$arenas) echo "<p>(ainda sem campos)</p>";
-  echo "<ul class='list-group mb-3'>";
+
+  echo "<div class='dashboard-layout'>";
+
+  // Left: arenas list card
+  echo "  <section class='dash-card'>";
+  echo "    <div class='dash-card-header'><h2 class='h5 m-0'>Os meus Campos".(count($arenas)?" <span class='count-badge'>".count($arenas)."</span>":"")."</h2></div>";
+  echo "    <div class='dash-card-body'>";
+  if (!$arenas) {
+    echo "<p class='empty muted'>(ainda sem campos)</p>";
+  }
+  echo "      <ul class='list-group modern-list'>";
   foreach ($arenas as $a) {
     echo "<li class='list-group-item bg-transparent text-light d-flex justify-content-between align-items-center'>".
-         "<span><b>".htmlspecialchars($a['name'])."</b></span>".
+         "<span class='arena-name'>".htmlspecialchars($a['name'])."</span>".
          "<a class='btn btn-sm btn-outline-light' href='/owner/arena/".$a['id']."'>Abrir</a>".
          "</li>";
   }
-  echo "</ul>";
-  echo "<h3>Novo Campo</h3>
-    <form method='post' class='row g-3' style='max-width:540px'>
-      <input type='hidden' name='create_arena' value='1'>
-      <div class='col-12'>
-        <label class='form-label'>Nome do Campo</label>
-        <input class='form-control' name='arena_name' required>
-      </div>
-      <div class='col-12'><button type='submit' class='btn btn-success'>Criar</button></div>
-    </form>";
+  echo "      </ul>";
+  echo "    </div>";
+  echo "  </section>";
+
+  // Right: new arena card
+  echo "  <section class='dash-card'>";
+  echo "    <div class='dash-card-header'><h2 class='h5 m-0'>Novo Campo</h2></div>";
+  echo "    <div class='dash-card-body'>";
+  echo "      <form method='post' class='row g-3'>";
+  echo "        <input type='hidden' name='create_arena' value='1'>";
+  echo "        <div class='col-12'>";
+  echo "          <label class='form-label'>Nome do Campo</label>";
+  echo "          <input class='form-control form-control-lg' name='arena_name' required placeholder='Ex.: Strikezone Norte'>";
+  echo "        </div>";
+  echo "        <div class='col-12'>";
+  echo "          <button type='submit' class='btn btn-success btn-lg w-100'>Criar campo</button>";
+  echo "        </div>";
+  echo "      </form>";
+  echo "    </div>";
+  echo "  </section>";
+
+  echo "</div>"; // dashboard-layout
   page_footer(); exit;
 }
 
 if (preg_match('#^/owner/arena/(\d+)$#', $uri, $m)) {
   $ownerId = $auth->requireOwner();
+  if (session_status()===PHP_SESSION_ACTIVE) { @session_write_close(); }
   $arenaId = (int)$m[1];
   $ok=false; foreach ($repo->listArenasByOwner($ownerId) as $a) if ((int)$a['id']===$arenaId) $ok=true;
   if (!$ok){ http_response_code(403); exit('forbidden'); }
@@ -160,6 +219,7 @@ if (preg_match('#^/owner/arena/(\d+)$#', $uri, $m)) {
 
 if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
   $ownerId = $auth->requireOwner();
+  if (session_status()===PHP_SESSION_ACTIVE) { @session_write_close(); }
   $matchId = (int)$m[1];
   $match = $repo->getMatchById($matchId);
   if (!$match){ http_response_code(404); exit('not found'); }
@@ -175,6 +235,10 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
   echo "<p><b>A:</b> ".htmlspecialchars($match['team_a_name'])." &nbsp; <b>B:</b> ".htmlspecialchars($match['team_b_name'])."</p>";
   echo "<p>Códigos — A=<code>{$match['team_a_code']}</code> &nbsp; B=<code>{$match['team_b_code']}</code></p>";
 
+  echo "<div class='d-flex align-items-center gap-2 mb-3'>";
+  echo "  <form method='post' action='/owner/match/stop' class='d-inline'><input type='hidden' name='match_id' value='".$matchId."'><button class='btn btn-outline-warning btn-sm'>Parar partida</button></form>";
+  echo "  <form method='post' action='/owner/match/start' class='d-inline'><input type='hidden' name='match_id' value='".$matchId."'><button class='btn btn-outline-success btn-sm'>Iniciar partida</button></form>";
+  echo "</div>";
   echo "<div id='live' class='row g-3 align-items-start'>";
   echo "<section class='col-md-6'><h3 class='h5'>Equipa A</h3><ul id='teamA' class='list-group'></ul></section>";
   echo "<section class='col-md-6'><h3 class='h5'>Equipa B</h3><ul id='teamB' class='list-group'></ul></section>";
@@ -214,12 +278,14 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
       }catch(e){}
     });
   </script>";
+  // server-side kill switch controls; no client JS needed here
 
   page_footer(); exit;
 }
 
 if ($uri==='/owner/maps') {
   $ownerId = $auth->requireOwner();
+  if (session_status()===PHP_SESSION_ACTIVE) { @session_write_close(); }
   $cfgUp = $config['uploads'];
   if (!is_dir($cfgUp['maps_dir'])) @mkdir($cfgUp['maps_dir'], 0775, true);
 
@@ -353,3 +419,6 @@ echo "  </div>";
 echo "</section>";
 
 echo "<script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'></script></body></html>";
+
+
+
