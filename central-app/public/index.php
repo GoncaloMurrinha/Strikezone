@@ -25,6 +25,8 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 /* ---------- API ---------- */
 if ($uri === '/api/register.php') {require __DIR__.'/api/register.php'; exit;}
 if ($uri==='/api/login'    && $method==='POST') { $api->login(); exit; }
+if ($uri==='/api/code/resolve' && ($method==='GET' || $method==='POST')) { $api->codeResolve(); exit; }
+if ($uri==='/api/code/resolve' && ($method==='GET' || $method==='POST')) { $api->codeResolve(); exit; }
 if ($uri === '/register') { readfile(__DIR__ . '/register.html'); exit; }
 
 if ($uri==='/api/arena/create' && $method==='POST') { $api->arenaCreate(); exit; }
@@ -417,6 +419,7 @@ echo "    <h2 class='h4 mb-3'>API (Resumo)</h2>";
 echo "    <pre class='bg-black border border-secondary rounded p-3 mb-0'>
 POST /api/register   {email,password,display_name}
 POST /api/login      {email,password}
+GET  /api/code/resolve?code=XXXXXX   or   POST /api/code/resolve {code}
 POST /api/arena/create  (Bearer)
 GET  /api/arena/list    (Bearer)
 POST /api/match/create  (Bearer)
@@ -429,6 +432,8 @@ echo "  </div>";
 echo "</section>";
 
 echo "<script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'></script></body></html>";
+
+
 
 
 

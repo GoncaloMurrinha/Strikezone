@@ -5,7 +5,7 @@ final class ApiController {
   public function __construct(
     private Repository $repo,
     private FloorEngine $fe,
-    private Realtime $rt,
+    private ?Realtime $rt,
     private array $cfg
   ) {}
 
@@ -48,6 +48,34 @@ final class ApiController {
     if (!$u || !password_verify($pass,$u['pass_hash'])) { json_out(['error'=>'bad_auth'],401); return; }
     $token = Jwt::sign(['uid'=>$u['id'],'name'=>$u['display_name'],'email'=>$u['email']], $this->cfg['api']['jwt_secret'], $this->cfg['api']['jwt_issuer'], $this->cfg['api']['token_ttl']);
     json_out(['ok'=>true,'token'=>$token]);
+  }
+
+  // ---- CODE RESOLVE ----
+  // GET /api/code/resolve?code=XXXXXX  or POST {code}
+  // Returns which team (A/B) a join code belongs to, with basic match info.
+  public function codeResolve(): void {
+    $code = '';
+    $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    if ($method === 'GET') {
+      $code = strtoupper(trim((string)($_GET['code'] ?? '')));
+    } else {
+      $in = json_input();
+      $code = strtoupper(trim((string)($in['code'] ?? '')));
+    }
+    error_log('[codeResolve] method='.($method).' code='.(string)$code);
+    if ($code===''){ json_out(['error'=>'invalid_code'],422); return; }
+    $m = $this->repo->resolveMatchByJoinCode($code);
+    if (!$m){ error_log('[codeResolve] not_found for code='.$code); json_out(['error'=>'not_found'],404); return; }
+    // Active match check: started and not ended
+    $now = time();
+    $starts = strtotime((string)$m['starts_at']);
+    $endsRaw = $m['ends_at'] ?? null;
+    $ends = $endsRaw ? strtotime((string)$endsRaw) : null;
+    $active = ($starts !== false && $starts <= $now) && ($ends === null || $ends >= $now);
+    if (!$active) { error_log('[codeResolve] inactive for code='.$code); json_out(['error'=>'inactive'], 409); return; }
+    $side = ($code === $m['team_a_code']) ? 'A' : 'B';
+    error_log('[codeResolve] resolved side='.$side.' match_id='.(int)$m['id']);
+    json_out(['status'=>'ok','team'=>$side]);
   }
 
   // ---- ARENA ----

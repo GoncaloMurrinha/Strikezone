@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__.'/_framework.php';
-require dirname(__DIR__).'/src/FloorEngine.php';
+require_once dirname(__DIR__).'/src/FloorEngine.php';
 
 register_test('FloorEngine picks strongest floor by weighted RSSI', function(){
   $fe = new FloorEngine();

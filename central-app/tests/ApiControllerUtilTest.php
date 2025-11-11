@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__.'/_framework.php';
-require dirname(__DIR__).'/src/ApiController.php';
+require_once dirname(__DIR__).'/src/ApiController.php';
 
 register_test('ApiController::randomCode length and charset', function(){
   $code = ApiController::randomCode(8);
