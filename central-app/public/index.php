@@ -1,6 +1,15 @@
 <?php
 declare(strict_types=1);
 
+if (PHP_SAPI === 'cli-server') {
+  $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+  $fullPath = realpath(__DIR__ . $path);
+  $publicDir = realpath(__DIR__);
+  if ($path !== '/' && $fullPath && str_starts_with($fullPath, $publicDir) && is_file($fullPath)) {
+    return false;
+  }
+}
+
 require __DIR__ . '/../src/db.php';
 require __DIR__ . '/../src/helpers.php';
 require __DIR__ . '/../src/Repository.php';
