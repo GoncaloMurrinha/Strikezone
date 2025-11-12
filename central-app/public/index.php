@@ -21,7 +21,24 @@ require __DIR__ . '/../src/ApiController.php';
 require __DIR__ . '/../src/OwnerAuth.php';
 
 $config = require __DIR__ . '/../src/config.php';
-$pdo = (new DB($config['db']))->pdo();
+
+try {
+  $pdo = (new DB($config['db']))->pdo();
+} catch (PDOException $e) {
+  http_response_code(500);
+  $hint = "A extensão PDO para MySQL não está carregada. Ativa-a no php.ini (ex.: remove ';extension=pdo_mysql').";
+  error_log('[Strikezone] Falha na ligação à base de dados: ' . $e->getMessage());
+  echo "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>";
+  echo "<title>Strikezone — Erro de base de dados</title><link rel='stylesheet' href='/assets/style.css'></head><body class='db-error wrap'>";
+  echo "<h1>Não foi possível ligar à base de dados</h1>";
+  echo "<p>" . htmlspecialchars($hint, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</p>";
+  if (PHP_SAPI === 'cli-server') {
+    echo "<p>Depois de ativares a extensão, reinicia o servidor embutido: <code>php -S 0.0.0.0:8080 -t public public/index.php</code></p>";
+  }
+  echo "</body></html>";
+  exit;
+}
+
 $repo = new Repository($pdo);
 $fe = new FloorEngine();
 $rt = new Realtime($config['redis']);
