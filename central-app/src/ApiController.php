@@ -8,6 +8,14 @@ final class ApiController {
     private ?Realtime $rt,
     private array $cfg
   ) {}
+  private function ownerOwnsArena(int $ownerId, int $arenaId): bool {
+    foreach ($this->repo->listArenasByOwner($ownerId) as $arena) {
+      if ((int)$arena['id'] === $arenaId) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   // Util
   public static function randomCode(int $len=6): string {
@@ -17,6 +25,43 @@ final class ApiController {
   }
   private function tokenForUser(array $u): string {
     return Jwt::sign(['uid'=>(int)$u['id'],'name'=>$u['display_name']], $this->cfg['api']['jwt_secret'], $this->cfg['api']['jwt_issuer'], $this->cfg['api']['token_ttl']);
+  }
+  private function matchToken(array $match, string $side): string {
+    $secret = (string)($this->cfg['api']['match_token_secret'] ?? $this->cfg['api']['jwt_secret']);
+    $code = strtoupper($side === 'A' ? (string)$match['team_a_code'] : (string)$match['team_b_code']);
+    $payload = implode(':', [
+      (int)$match['id'],
+      $side,
+      (int)$match['arena_id'],
+      $code
+    ]);
+    $raw = hash_hmac('sha256', $payload, $secret, true);
+    // Base64-url encoding keeps the token compact and URL safe.
+    return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+  }
+  private function matchTokenValid(?string $token, array $match, string $side): bool {
+    if ($token === null) return false;
+    if ($side !== 'A' && $side !== 'B') return false;
+    $expected = $this->matchToken($match, $side);
+    return hash_equals($expected, $token);
+  }
+  private function authenticateMatchRequest(array $match, string $side): array {
+    $token = require_auth_header();
+    if (!$token) { json_out(['error'=>'unauthorized'],401); exit; }
+    try {
+      $payload = Jwt::verify($token, $this->cfg['api']['jwt_secret'], $this->cfg['api']['jwt_issuer']);
+      return ['mode'=>'owner','payload'=>$payload];
+    } catch (\Throwable $e) {
+      if ($this->matchTokenValid($token, $match, $side)) {
+        return ['mode'=>'match','side'=>$side];
+      }
+    }
+    json_out(['error'=>'unauthorized'],401); exit;
+  }
+  private static function sideFromTeamId(int $matchId, int $teamId): ?string {
+    if ($teamId === ($matchId*10 + 1)) return 'A';
+    if ($teamId === ($matchId*10 + 2)) return 'B';
+    return null;
   }
   private function requireUser(): array {
     $tok = require_auth_header(); if (!$tok) { json_out(['error'=>'unauthorized'],401); exit; }
@@ -75,7 +120,16 @@ final class ApiController {
     if (!$active) { error_log('[codeResolve] inactive for code='.$code); json_out(['error'=>'inactive'], 409); return; }
     $side = ($code === $m['team_a_code']) ? 'A' : 'B';
     error_log('[codeResolve] resolved side='.$side.' match_id='.(int)$m['id']);
-    json_out(['status'=>'ok','team'=>$side]);
+    $teamName = $side==='A' ? (string)$m['team_a_name'] : (string)$m['team_b_name'];
+    $token = $this->matchToken($m, $side);
+    json_out([
+      'status'=>'ok',
+      'team'=>$side,
+      'token'=>$token,
+      'team_name'=>$teamName,
+      'match_id'=>(int)$m['id'],
+      'arena_id'=>(int)$m['arena_id']
+    ]);
   }
 
   // ---- ARENA ----
@@ -166,8 +220,7 @@ final class ApiController {
     if (!$match){ json_out(['error'=>'not_found'],404); return; }
 
     // valida dono da arena
-    $arenaIds = array_column($this->repo->listArenasByOwner($ownerId),'id');
-    if (!in_array((int)$match['arena_id'], array_map('intval',$arenaIds), true)) { json_out(['error'=>'forbidden'],403); return; }
+    if (!$this->ownerOwnsArena($ownerId,(int)$match['arena_id'])) { json_out(['error'=>'forbidden'],403); return; }
 
     $members = $this->repo->listMembersByMatch($matchId);
     $out = [];
@@ -186,14 +239,55 @@ final class ApiController {
     }
     json_out(['ok'=>true,'match'=>$match,'members'=>$out]);
   }
+  // POST /api/match/register-player {match_id,user_id,side}
+  public function matchRegisterPlayer(): void {
+    $in = json_input();
+    $matchId = (int)($in['match_id'] ?? 0);
+    $userId  = (int)($in['user_id'] ?? 0);
+    $side    = strtoupper(trim((string)($in['side'] ?? '')));
+    $display = trim((string)($in['display_name'] ?? ''));
+    if ($matchId<=0 || !in_array($side,['A','B'], true)) {
+      json_out(['error'=>'invalid_input'],422); return;
+    }
+    $match = $this->repo->getMatchById($matchId);
+    if (!$match){ json_out(['error'=>'not_found'],404); return; }
+    $auth = $this->authenticateMatchRequest($match, $side);
+    $ownerId = null;
+    if ($auth['mode']==='owner') {
+      $ownerPayload = $auth['payload'];
+      $ownerId = (int)$ownerPayload['uid'];
+      if (!$this->ownerOwnsArena($ownerId,(int)$match['arena_id'])) { json_out(['error'=>'forbidden'],403); return; }
+    } else {
+      $userId = 0; // players using match tokens can only create themselves
+    }
+    $playerName = $display;
+    if ($userId>0) {
+      $user = $this->repo->findUserById($userId);
+      if (!$user) { json_out(['error'=>'user_not_found'],404); return; }
+      $playerName = (string)$user['display_name'];
+    } else {
+      if ($playerName===''){ json_out(['error'=>'invalid_input'],422); return; }
+      $userId = $this->repo->createGuestUser($playerName);
+    }
+
+    $this->repo->addMemberToMatch($matchId,$userId,$side);
+    $teamId = $matchId*10 + ($side==='A'?1:2);
+    $playerId = $this->repo->ensurePlayer($userId,$teamId);
+
+    json_out([
+      'ok'=>true,
+      'match_id'=>$matchId,
+      'team_id'=>$teamId,
+      'player_id'=>$playerId,
+      'user_id'=>$userId,
+      'side'=>$side,
+      'display_name'=>$playerName
+    ]);
+  }
 
   // ---- SCAN ----
   // POST /api/scan { match_id, team_id, player_id, arena_id, readings:[{uuid,major,minor,rssi}], last_floor? }
   public function submitScan(): void {
-    $tok = require_auth_header(); if (!$tok){ json_out(['error'=>'unauthorized'],401); return; }
-    $pl = Jwt::verify($tok,$this->cfg['api']['jwt_secret'],$this->cfg['api']['jwt_issuer']);
-    $uId = (int)$pl['uid'];
-
     $in = json_input();
     $matchId = (int)($in['match_id'] ?? 0);
     $teamId  = (int)($in['team_id']  ?? 0);
@@ -205,7 +299,20 @@ final class ApiController {
     if ($matchId<=0 || $teamId<=0 || $playerId<=0 || $arenaId<=0 || !$reads) {
       json_out(['error'=>'invalid_input'],422); return;
     }
-
+    $match = $this->repo->getMatchById($matchId);
+    if (!$match){ json_out(['error'=>'not_found'],404); return; }
+    $side = self::sideFromTeamId($matchId, $teamId);
+    if ($side === null) { json_out(['error'=>'invalid_team'],422); return; }
+    $auth = $this->authenticateMatchRequest($match, $side);
+    $userMeta = ['id'=>0,'name'=>''];
+    if ($auth['mode']==='owner') {
+      $payload = $auth['payload'];
+      $userMeta['id'] = (int)$payload['uid'];
+      $userMeta['name'] = (string)($payload['name'] ?? '');
+    } else {
+      $userMeta['id'] = $playerId;
+      $userMeta['name'] = 'player';
+    }
     // Lookup de floors por beacon (1 query por arena em vez de N por reading)
     $floorsMap = $this->repo->getBeaconFloorsMap($arenaId);
     $mapped = [];
@@ -236,7 +343,7 @@ final class ApiController {
       'ts'=>time(),
       'match_id'=>$matchId,
       'team_id'=>$teamId,
-      'user'=>['id'=>$uId, 'name'=>$pl['name'] ?? ''],
+      'user'=>['id'=>$userMeta['id'], 'name'=>$userMeta['name']],
       'pos'=>['floor'=>$floor, 'conf'=>$decision['confidence']]
     ];
     $this->rt->publishTeamPosition($teamId, $msg);

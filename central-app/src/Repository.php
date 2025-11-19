@@ -10,10 +10,22 @@ final class Repository {
     $st->execute([strtolower($email)]);
     $u = $st->fetch(); return $u ?: null;
   }
+  public function findUserById(int $id): ?array {
+    $st = $this->pdo->prepare('SELECT * FROM users WHERE id=?');
+    $st->execute([$id]);
+    $u = $st->fetch(); return $u ?: null;
+  }
   public function createUser(string $email, string $pass, string $name): int {
     $st = $this->pdo->prepare('INSERT INTO users (email, pass_hash, display_name) VALUES (?,?,?)');
     $st->execute([strtolower($email), password_hash($pass, PASSWORD_BCRYPT), $name]);
     return (int)$this->pdo->lastInsertId();
+  }
+  public function createGuestUser(string $name): int {
+    $slug = strtolower(preg_replace('~[^a-z0-9]+~i', '', $name));
+    if ($slug === '') $slug = 'player';
+    $email = sprintf('%s.%s@guest.local', $slug, bin2hex(random_bytes(4)));
+    $pass  = bin2hex(random_bytes(8));
+    return $this->createUser($email, $pass, $name);
   }
 
   // ----- ARENAS -----

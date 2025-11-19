@@ -1,0 +1,12 @@
+RewriteEngine On
+# Ensure Authorization headers reach PHP (needed for Bearer tokens)
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# Serve existing files/directories as-is
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Everything else goes through index.php
+RewriteRule ^ index.php [L]

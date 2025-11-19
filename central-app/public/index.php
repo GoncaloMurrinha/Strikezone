@@ -1,12 +1,11 @@
-<?php
-declare(strict_types=1);
+﻿<?php
+
 
 require __DIR__ . '/../src/db.php';
 require __DIR__ . '/../src/helpers.php';
 require __DIR__ . '/../src/Repository.php';
 require __DIR__ . '/../src/FloorEngine.php';
 require __DIR__ . '/../src/Jwt.php';
-require __DIR__ . '/../src/MiniRedis.php';
 require __DIR__ . '/../src/Realtime.php';
 require __DIR__ . '/../src/ApiController.php';
 require __DIR__ . '/../src/OwnerAuth.php';
@@ -24,9 +23,9 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 /* ---------- API ---------- */
 if ($uri === '/api/register.php') {require __DIR__.'/api/register.php'; exit;}
+if ($uri==='/api/register' && $method==='POST') { $api->register(); exit; }
 if ($uri==='/api/login'    && $method==='POST') { $api->login(); exit; }
-if ($uri==='/api/code/resolve' && ($method==='GET' || $method==='POST')) { $api->codeResolve(); exit; }
-if ($uri==='/api/code/resolve' && ($method==='GET' || $method==='POST')) { $api->codeResolve(); exit; }
+if ($uri==='/api/code/resolve') { $api->codeResolve(); exit; }
 if ($uri === '/register') { readfile(__DIR__ . '/register.html'); exit; }
 
 if ($uri==='/api/arena/create' && $method==='POST') { $api->arenaCreate(); exit; }
@@ -35,26 +34,27 @@ if ($uri==='/api/arena/list'   && $method==='GET')  { $api->arenaList(); exit; }
 if ($uri==='/api/match/create' && $method==='POST') { $api->matchCreate(); exit; }
 if ($uri==='/api/match/list'   && $method==='GET')  { $api->matchList(); exit; }
 if ($uri==='/api/match/join'   && $method==='POST') { $api->matchJoin(); exit; }
+if ($uri==='/api/match/register-player' && $method==='POST') { $api->matchRegisterPlayer(); exit; }
 if ($uri==='/api/match/roster' && $method==='GET')  { $api->matchRoster(); exit; }
 
 if ($uri==='/api/scan' && $method==='POST') { $api->submitScan(); exit; }
 
 /* ---------- OWNER UI ---------- */
 function page_header($title='Owner'){
-  echo "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>";
-  echo "<link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css' rel='stylesheet'>";
-  echo "<title>".htmlspecialchars($title)."</title><link rel='stylesheet' href='/assets/style.css'></head><body data-bs-theme='dark' class='owner-ui bg-dark text-light'>";
-  echo "<header class='owner-navbar'><div class='owner-nav-inner'>";
-  echo "  <div class='brand'>Strikezone</div>";
-  echo "  <nav class='owner-nav-links'>";
-  echo "    <a href='/owner'>Dashboard</a>";
-  echo "    <a href='/owner/maps'>Mapas</a>";
-  echo "    <a href='/owner/logout'>Sair</a>";
-  echo "  </nav>";
-  echo "</div></header>";
-  echo "<div class='wrap'><h1 class='page-title h3'>".htmlspecialchars($title)."</h1>";
+  $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+  echo "<!doctype html><html lang='pt'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>";
+  echo "<title>$safeTitle</title>";
+  echo "<link rel='preconnect' href='https://fonts.googleapis.com'>";
+  echo "<link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>";
+  echo "<link href='https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap' rel='stylesheet'>";
+  echo "<link rel='stylesheet' href='/assets/app.css'>";
+  echo "</head><body class='dash-body'><div class='dashboard-shell'>";
+  echo "<header class='top-nav'>";
+  echo "<div class='brand'><img src='/assets/logo_strikezone.png' alt='StrikeZone'><span>StrikeZone Central</span></div>";
+  echo "<nav><a href='/owner' class='btn btn-ghost'>Dashboard</a><a href='/owner/maps' class='btn btn-ghost'>Mapas</a><a href='/owner/logout' class='btn btn-ghost'>Sair</a></nav>";
+  echo "</header><main class='dash-main'><h1>$safeTitle</h1>";
 }
-function page_footer(){ echo "</div><script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'></script></body></html>"; }
+function page_footer(){ echo "</main></div></body></html>"; }
 
 if ($uri==='/owner/login') {
   if ($method==='POST') {
@@ -62,55 +62,139 @@ if ($uri==='/owner/login') {
     if ($ok) { header('Location: /owner'); exit; }
     $err = "Credenciais inválidas";
   }
-  echo "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css' rel='stylesheet'><link rel='stylesheet' href='/assets/style.css'><title>Login — Dono</title></head><body data-bs-theme='dark' class='bg-dark text-light wrap'>";
-  echo "<h1>Login — Dono do Campo</h1>";
-  if (!empty($err)) echo "<p class='err'>$err</p>";
-  echo "<form method='post' class='form-grid' style='max-width:420px'>
-    <label>Email <input name='email' type='email' required></label>
-    <label>Password <input name='password' type='password' required></label>
-    <button type='submit'>Entrar</button>
-  </form><p><a href='/'>Voltar</a></p></body></html>";
+  $errBlock = '';
+  if (!empty($err)) {
+    $errEsc = htmlspecialchars($err, ENT_QUOTES, 'UTF-8');
+    $errBlock = "<div class='alert'>$errEsc</div>";
+  }
+  echo "<!doctype html>
+<html lang='pt'>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title>Login - StrikeZone</title>
+  <link rel='preconnect' href='https://fonts.googleapis.com'>
+  <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+  <link href='https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap' rel='stylesheet'>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg:#0f1230;
+      --panel:#1a1f4d;
+      --accent:#9f7eff;
+      --accent-strong:#f64b9b;
+      --text:#f2f3ff;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:radial-gradient(circle at top, #1c2362 0%, #0d0f29 60%);
+      font-family:'Space Grotesk',system-ui,sans-serif;
+      color:var(--text);
+      padding:2rem;
+    }
+    .auth-card {
+      width:min(420px, 100%);
+      background:rgba(15,18,48,0.85);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:18px;
+      box-shadow:0 30px 60px rgba(6,8,24,0.6);
+      padding:2.5rem;
+      text-align:center;
+      backdrop-filter: blur(18px);
+    }
+    .logo {
+      width:90px;
+      margin:0 auto 1rem auto;
+      display:block;
+    }
+    h1 { font-size:1.9rem; margin-bottom:0.5rem; }
+    .subtitle { color:rgba(242,243,255,0.65); margin-bottom:2rem; }
+    label { display:block; text-align:left; font-weight:500; margin-bottom:0.4rem; }
+    input[type=email], input[type=password] {
+      width:100%;
+      border:1px solid rgba(255,255,255,0.15);
+      background:rgba(12,16,44,0.8);
+      border-radius:12px;
+      padding:0.9rem 1rem;
+      color:var(--text);
+      font-size:1rem;
+      margin-bottom:1.2rem;
+      outline:none;
+      transition:border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus {
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(159,126,255,0.2);
+    }
+    .actions {
+      display:flex;
+      gap:0.75rem;
+      margin-top:0.5rem;
+    }
+    .btn {
+      flex:1;
+      border:none;
+      cursor:pointer;
+      border-radius:999px;
+      font-weight:600;
+      padding:0.9rem 1rem;
+      font-size:1rem;
+      transition:transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary {
+      background:linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color:#fff;
+      box-shadow:0 15px 30px rgba(246,75,155,0.35);
+    }
+    .btn-secondary {
+      background:rgba(255,255,255,0.08);
+      color:#fff;
+      border:1px solid rgba(255,255,255,0.1);
+    }
+    .btn:hover { transform:translateY(-1px); }
+    .btn:active { transform:translateY(1px); }
+    .alert {
+      background:rgba(255,82,125,0.1);
+      border:1px solid rgba(255,82,125,0.3);
+      color:#ff8ea5;
+      padding:0.75rem 1rem;
+      border-radius:10px;
+      margin-bottom:1rem;
+      text-align:left;
+      font-size:0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <div class='auth-card'>
+    <img class='logo' src='/assets/logo_strikezone.png' alt='StrikeZone'>
+    <h1>Login</h1>
+    <p class='subtitle'>Acede ao dashboard para gerir arenas e partidas.</p>
+    $errBlock
+    <form method='post'>
+      <label for='email'>E-mail</label>
+      <input id='email' name='email' type='email' placeholder='owner@strikezone.pt' required>
+      <label for='password'>Password</label>
+      <input id='password' name='password' type='password' placeholder='••••••••' required>
+      <div class='actions'>
+        <button type='submit' class='btn btn-primary'>Entrar</button>
+        <a class='btn btn-secondary' href='/' role='button'>Voltar</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>";
   exit;
 }
-
 if ($uri==='/owner/logout') { $auth->logout(); header('Location: /owner/login'); exit; }
-
-// Owner match kill switch endpoints
-if ($uri==='/owner/match/stop' && $method==='POST') {
-  $ownerId = $auth->requireOwner();
-  if (session_status()===PHP_SESSION_ACTIVE) { @session_write_close(); }
-  $mid = (int)($_POST['match_id'] ?? 0);
-  $match = $repo->getMatchById($mid);
-  if ($mid<=0 || !$match) { http_response_code(422); exit('invalid_match'); }
-  $ok=false; foreach ($repo->listArenasByOwner($ownerId) as $a) if ((int)$a['id']===(int)$match['arena_id']) $ok=true;
-  if (!$ok){ http_response_code(403); exit('forbidden'); }
-  $mr = new MiniRedis($config['redis']['host'], (int)$config['redis']['port'], (float)$config['redis']['timeout']);
-  $stopKey = ($config['redis']['prefix'] ?? 'airsoft:') . "match:$mid:stopped";
-  $mr->set($stopKey,'1', 86400);
-  // publish immediate stop to match + team channels so SSE exits at once
-  $prefix = ($config['redis']['prefix'] ?? 'airsoft:');
-  $mr->publish($prefix."match:$mid", json_encode(['ctrl'=>'stop']));
-  $mr->publish($prefix."team:".($mid*10+1), json_encode(['ctrl'=>'stop']));
-  $mr->publish($prefix."team:".($mid*10+2), json_encode(['ctrl'=>'stop']));
-  header('Location: /owner/match/'.$mid); exit;
-}
-if ($uri==='/owner/match/start' && $method==='POST') {
-  $ownerId = $auth->requireOwner();
-  if (session_status()===PHP_SESSION_ACTIVE) { @session_write_close(); }
-  $mid = (int)($_POST['match_id'] ?? 0);
-  $match = $repo->getMatchById($mid);
-  if ($mid<=0 || !$match) { http_response_code(422); exit('invalid_match'); }
-  $ok=false; foreach ($repo->listArenasByOwner($ownerId) as $a) if ((int)$a['id']===(int)$match['arena_id']) $ok=true;
-  if (!$ok){ http_response_code(403); exit('forbidden'); }
-  $mr = new MiniRedis($config['redis']['host'], (int)$config['redis']['port'], (float)$config['redis']['timeout']);
-  $stopKey = ($config['redis']['prefix'] ?? 'airsoft:') . "match:$mid:stopped";
-  $mr->del($stopKey);
-  header('Location: /owner/match/'.$mid); exit;
-}
 
 if ($uri==='/owner') {
   $ownerId = $auth->requireOwner();
-  if (session_status()===PHP_SESSION_ACTIVE) { @session_write_close(); }
   if ($method==='POST' && isset($_POST['create_arena'])) {
     $name = trim($_POST['arena_name'] ?? '');
     if ($name!=='') $repo->createArena($ownerId,$name);
@@ -118,51 +202,35 @@ if ($uri==='/owner') {
   }
   $arenas = $repo->listArenasByOwner($ownerId);
   page_header("Painel do Campo");
-
-  echo "<div class='dashboard-layout'>";
-
-  // Left: arenas list card
-  echo "  <section class='dash-card'>";
-  echo "    <div class='dash-card-header'><h2 class='h5 m-0'>Os meus Campos".(count($arenas)?" <span class='count-badge'>".count($arenas)."</span>":"")."</h2></div>";
-  echo "    <div class='dash-card-body'>";
+  echo "<div class='grid-2'>";
+  echo "<section class='card'><h2>Os meus Campos</h2>";
   if (!$arenas) {
-    echo "<p class='empty muted'>(ainda sem campos)</p>";
+    echo "<p class='muted'>(ainda sem campos)</p>";
+  } else {
+    echo "<div class='list-flex'>";
+    foreach ($arenas as $a) {
+      $name = htmlspecialchars($a['name']);
+      $id = (int)$a['id'];
+      echo "<div class='item-row'><div><strong>$name</strong><br><span class='muted'>ID #$id</span></div><a class='btn btn-ghost' href='/owner/arena/$id'>Abrir</a></div>";
+    }
+    echo "</div>";
   }
-  echo "      <ul class='list-group modern-list'>";
-  foreach ($arenas as $a) {
-    echo "<li class='list-group-item bg-transparent text-light d-flex justify-content-between align-items-center'>".
-         "<span class='arena-name'>".htmlspecialchars($a['name'])."</span>".
-         "<a class='btn btn-sm btn-outline-light' href='/owner/arena/".$a['id']."'>Abrir</a>".
-         "</li>";
-  }
-  echo "      </ul>";
-  echo "    </div>";
-  echo "  </section>";
-
-  // Right: new arena card
-  echo "  <section class='dash-card'>";
-  echo "    <div class='dash-card-header'><h2 class='h5 m-0'>Novo Campo</h2></div>";
-  echo "    <div class='dash-card-body'>";
-  echo "      <form method='post' class='row g-3'>";
-  echo "        <input type='hidden' name='create_arena' value='1'>";
-  echo "        <div class='col-12'>";
-  echo "          <label class='form-label'>Nome do Campo</label>";
-  echo "          <input class='form-control form-control-lg' name='arena_name' required placeholder='Ex.: Strikezone Norte'>";
-  echo "        </div>";
-  echo "        <div class='col-12'>";
-  echo "          <button type='submit' class='btn btn-success btn-lg w-100'>Criar campo</button>";
-  echo "        </div>";
-  echo "      </form>";
-  echo "    </div>";
-  echo "  </section>";
-
-  echo "</div>"; // dashboard-layout
+  echo "</section>";
+  echo "<section class='card'><h2>Novo Campo</h2>";
+  echo "<form method='post'>
+    <input type='hidden' name='create_arena' value='1'>
+    <div class='form-group'>
+      <label for='arena_name'>Nome do Campo</label>
+      <input id='arena_name' name='arena_name' required>
+    </div>
+    <button type='submit' class='btn'>Criar Campo</button>
+  </form></section>";
+  echo "</div>";
   page_footer(); exit;
 }
 
 if (preg_match('#^/owner/arena/(\d+)$#', $uri, $m)) {
   $ownerId = $auth->requireOwner();
-  if (session_status()===PHP_SESSION_ACTIVE) { @session_write_close(); }
   $arenaId = (int)$m[1];
   $ok=false; foreach ($repo->listArenasByOwner($ownerId) as $a) if ((int)$a['id']===$arenaId) $ok=true;
   if (!$ok){ http_response_code(403); exit('forbidden'); }
@@ -184,49 +252,63 @@ if (preg_match('#^/owner/arena/(\d+)$#', $uri, $m)) {
   $maps = $repo->listMapsByArena($arenaId);
 
   page_header("Campo #$arenaId");
-  echo "<p><a class='link-light' href='/owner'>&larr; voltar</a></p>";
-  echo "<h2>Jogos</h2>";
-  if (!$matches) echo "<p>(ainda sem jogos)</p>";
-  echo "<table class='table table-dark table-striped table-hover table-sm'><thead><tr><th>ID</th><th>Nome</th><th>Início</th><th>Equipas</th><th>Códigos</th><th></th></tr></thead><tbody>";
-  foreach ($matches as $mrow) {
-    echo "<tr>
-      <td>{$mrow['id']}</td>
-      <td>".htmlspecialchars($mrow['name'])."</td>
-      <td>".htmlspecialchars($mrow['starts_at'])."</td>
-      <td>".htmlspecialchars($mrow['team_a_name'])." vs ".htmlspecialchars($mrow['team_b_name'])."</td>
-      <td>A=<code>{$mrow['team_a_code']}</code> &nbsp; B=<code>{$mrow['team_b_code']}</code></td>
-      <td><a href='/owner/match/{$mrow['id']}'>ver ao vivo</a></td>
-    </tr>";
+  echo "<a class='btn btn-ghost' href='/owner'>&larr; Voltar ao painel</a>";
+  echo "<section class='card' style='margin-top:1.5rem;'>";
+  echo "<div class='row-between'><h2>Jogos</h2><span class='pill'>".count($matches)." registos</span></div>";
+  if (!$matches) {
+    echo "<p class='muted'>(ainda sem jogos)</p>";
+  } else {
+    echo "<table class='table'><thead><tr><th>ID</th><th>Nome</th><th>Início</th><th>Equipas</th><th>Códigos</th><th></th></tr></thead><tbody>";
+    foreach ($matches as $mrow) {
+      $mid = (int)$mrow['id'];
+      $name = htmlspecialchars($mrow['name']);
+      $start = htmlspecialchars($mrow['starts_at']);
+      $teams = htmlspecialchars($mrow['team_a_name'])." vs ".htmlspecialchars($mrow['team_b_name']);
+      $codeA = htmlspecialchars($mrow['team_a_code']);
+      $codeB = htmlspecialchars($mrow['team_b_code']);
+      echo "<tr>
+        <td>$mid</td>
+        <td>$name</td>
+        <td>$start</td>
+        <td>$teams</td>
+        <td>A=<code>$codeA</code> B=<code>$codeB</code></td>
+        <td><a class='btn btn-ghost' href='/owner/match/$mid'>Ver ao vivo</a></td>
+      </tr>";
+    }
+    echo "</tbody></table>";
   }
-  echo "</tbody></table>";
+  echo "</section>";
 
-  echo "<h3>Novo Jogo</h3>
-    <form method='post' class='row g-3'>
+  echo "<div class='grid-2' style='margin-top:1.5rem;'>";
+  echo "<section class='card'><h3>Novo Jogo</h3>
+    <form method='post'>
       <input type='hidden' name='create_match' value='1'>
-      <div class='col-md-6'><label class='form-label'>Nome</label><input class='form-control' name='name' required></div>
-      <div class='col-md-6'><label class='form-label'>Início (YYYY-MM-DD HH:MM:SS)</label><input class='form-control' name='starts_at' required></div>
-      <div class='col-md-6'><label class='form-label'>Equipa A</label><input class='form-control' name='team_a' value='Azuis'></div>
-      <div class='col-md-6'><label class='form-label'>Equipa B</label><input class='form-control' name='team_b' value='Vermelhos'></div>
-      <div class='col-12'><button type='submit' class='btn btn-success'>Criar</button></div>
-    </form>";
+      <div class='form-group'><label for='match_name'>Nome</label><input id='match_name' name='name' required></div>
+      <div class='form-group'><label for='match_start'>Início (YYYY-MM-DD HH:MM:SS)</label><input id='match_start' name='starts_at' required></div>
+      <div class='form-group'><label for='team_a'>Equipa A</label><input id='team_a' name='team_a' value='Azuis'></div>
+      <div class='form-group'><label for='team_b'>Equipa B</label><input id='team_b' name='team_b' value='Vermelhos'></div>
+      <button type='submit' class='btn'>Criar jogo</button>
+    </form></section>";
 
-  echo "<h3>Mapas por piso</h3>";
+  echo "<section class='card'><h3>Mapas por piso</h3>";
   if ($maps){
-    echo "<ul class='list-group'>";
+    echo "<ul class='map-list'>";
     foreach ($maps as $mp){
-      echo "<li class='list-group-item bg-transparent text-light'>Piso ".(int)$mp['floor']." — <a class='link-light' href='".htmlspecialchars($mp['map_url'])."' target='_blank'>abrir</a></li>";
+      $floor = (int)$mp['floor'];
+      $url = htmlspecialchars($mp['map_url']);
+      echo "<li>Piso $floor — <a href='$url' target='_blank'>ver</a></li>";
     }
     echo "</ul>";
   } else {
-    echo "<p>(Sem mapas ainda, carrega-os em <a href='/owner/maps'>Mapas</a>)</p>";
+    echo "<p class='muted'>(Sem mapas ainda, carrega-os em <a href='/owner/maps'>Mapas</a>)</p>";
   }
+  echo "</section></div>";
 
   page_footer(); exit;
 }
 
 if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
   $ownerId = $auth->requireOwner();
-  if (session_status()===PHP_SESSION_ACTIVE) { @session_write_close(); }
   $matchId = (int)$m[1];
   $match = $repo->getMatchById($matchId);
   if (!$match){ http_response_code(404); exit('not found'); }
@@ -234,42 +316,49 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
   if (!$ok){ http_response_code(403); exit('forbidden'); }
 
   $members = $repo->listMembersByMatch($matchId);
+  $initialState = [];
+  foreach ($members as $mbr) {
+    $side = $mbr['side'];
+    $teamId = $matchId*10 + ($side==='A'?1:2);
+    $playerId = $repo->ensurePlayer((int)$mbr['user_id'],$teamId);
+    $st = $repo->getPlayerState($playerId);
+    $initialState[(int)$mbr['user_id']] = [
+      'name'=>$mbr['display_name'],
+      'side'=>$side,
+      'floor'=>$st['last_floor']!==null ? (int)$st['last_floor'] : null,
+      'conf'=>null
+    ];
+  }
   $maps = $repo->listMapsByArena((int)$match['arena_id']);
-  // estado via kill switch
-  $mr = new MiniRedis($config['redis']['host'], (int)$config['redis']['port'], (float)$config['redis']['timeout']);
-  $stopKey = ($config['redis']['prefix'] ?? 'airsoft:') . "match:$matchId:stopped";
-  $isStopped = ($mr->get($stopKey)!==null);
 
-  page_header("Ao vivo — Match #$matchId");
-  echo "<p><a class='link-light' href='/owner/arena/{$match['arena_id']}'>&larr; voltar</a></p>";
+  page_header("Ao vivo - Match #$matchId");
+  echo "<a class='btn btn-ghost' href='/owner/arena/{$match['arena_id']}'>&larr; Voltar ao campo</a>";
+  echo "<section class='card' style='margin-top:1.5rem;'>";
   echo "<h2>".htmlspecialchars($match['name'])."</h2>";
-  echo "<p><b>A:</b> ".htmlspecialchars($match['team_a_name'])." &nbsp; <b>B:</b> ".htmlspecialchars($match['team_b_name'])."</p>";
-  echo "<p>Códigos — A=<code>{$match['team_a_code']}</code> &nbsp; B=<code>{$match['team_b_code']}</code></p>";
+  echo "<p class='muted'>A: ".htmlspecialchars($match['team_a_name'])." &nbsp;&nbsp; B: ".htmlspecialchars($match['team_b_name'])."</p>";
+  echo "<p class='muted'>Códigos — A=<code>{$match['team_a_code']}</code> | B=<code>{$match['team_b_code']}</code></p>";
+  echo "</section>";
 
-  echo "<div class='d-flex align-items-center gap-2 mb-3'>";
-  echo "  <span id='matchStatus' class='badge ".($isStopped?"text-bg-secondary":"text-bg-success")."'>Estado: ".($isStopped?"Parado":"Ao vivo")."</span>";
-  echo "  <form id='stopForm' method='post' action='/owner/match/stop' class='d-inline'><input type='hidden' name='match_id' value='".$matchId."'><button id='btnStop' class='btn btn-outline-warning btn-sm'".($isStopped?" disabled":"").">Parar partida</button></form>";
-  echo "  <form id='startForm' method='post' action='/owner/match/start' class='d-inline'><input type='hidden' name='match_id' value='".$matchId."'><button id='btnStart' class='btn btn-outline-success btn-sm'".(!$isStopped?" disabled":"").">Iniciar partida</button></form>";
-  echo "</div>";
-  echo "<div id='live' class='row g-3 align-items-start'>";
-  echo "<section class='col-md-6'><h3 class='h5'>Equipa A</h3><ul id='teamA' class='list-group'></ul></section>";
-  echo "<section class='col-md-6'><h3 class='h5'>Equipa B</h3><ul id='teamB' class='list-group'></ul></section>";
-  echo "</div>";
+  echo "<section class='card' style='margin-top:1.5rem;'>";
+  echo "<div class='live-grid' id='live'>";
+  echo "<div><h3>Equipa A</h3><ul id='teamA'></ul></div>";
+  echo "<div><h3>Equipa B</h3><ul id='teamB'></ul></div>";
+  echo "</div></section>";
 
   if ($maps){
-    echo "<h3>Mapas por piso</h3><ul>";
+    echo "<section class='card' style='margin-top:1.5rem;'><h3>Mapas por piso</h3><ul class='map-list'>";
     foreach ($maps as $mp){
-      echo "<li>Piso ".(int)$mp['floor']." — <a href='".htmlspecialchars($mp['map_url'])."' target='_blank'>ver</a></li>";
+      echo "<li>Piso ".(int)$mp['floor']." - <a href='".htmlspecialchars($mp['map_url'])."' target='_blank'>ver</a></li>";
     }
-    echo "</ul>";
+    echo "</ul></section>";
   }
 
+  $initialStateJson = json_encode($initialState, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
   echo "<script>
     const matchId = $matchId;
     const A = document.getElementById('teamA');
     const B = document.getElementById('teamB');
-    const state = {};
-    const es = new EventSource('/stream_match.php?match_id='+matchId);
+    const state = $initialStateJson;
     function render(){
       A.innerHTML=''; B.innerHTML='';
       const arr = Object.values(state);
@@ -281,6 +370,8 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
         (it.side==='A'?A:B).appendChild(li);
       }
     }
+    render();
+    const es = new EventSource('/stream_match.php?match_id='+matchId);
     es.addEventListener('pos', ev=>{
       try{
         const j = JSON.parse(ev.data);
@@ -290,14 +381,12 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
       }catch(e){}
     });
   </script>";
-  echo "<script>\n    (function(){\n      var stopForm = document.getElementById('stopForm');\n      var startForm = document.getElementById('startForm');\n      var badge = document.getElementById('matchStatus');\n      var btnStop = document.getElementById('btnStop');\n      var btnStart = document.getElementById('btnStart');\n      function setBadge(text, cls){ badge.textContent = 'Estado: '+text; badge.className = 'badge '+cls; }\n      function disableBoth(dis){ if(btnStop) btnStop.disabled = dis; if(btnStart) btnStart.disabled = dis; }\n      function postForm(action){\n        var fd = new URLSearchParams();\n        fd.set('match_id', String(matchId));\n        return fetch(action, { method:'POST', body:fd, credentials:'same-origin', redirect:'follow' });\n      }\n      if (stopForm) stopForm.addEventListener('submit', function(ev){\n        ev.preventDefault();\n        disableBoth(true);\n        setBadge('A parar…', 'text-bg-warning');\n        try{ if (typeof es !== 'undefined' && es && es.close) es.close(); }catch(e){}\n        postForm(stopForm.action).finally(function(){\n          setBadge('Parado', 'text-bg-secondary');\n          disableBoth(false);\n          if(btnStop) btnStop.disabled = true;\n          if(btnStart) btnStart.disabled = false;\n        });\n      });\n      if (startForm) startForm.addEventListener('submit', function(ev){\n        ev.preventDefault();\n        disableBoth(true);\n        setBadge('A iniciar…', 'text-bg-info');\n        postForm(startForm.action).finally(function(){\n          setBadge('Ao vivo', 'text-bg-success');\n          disableBoth(false);\n          if(btnStop) btnStop.disabled = false;\n          if(btnStart) btnStart.disabled = true;\n        });\n      });\n    })();\n  </script>";
 
   page_footer(); exit;
 }
 
 if ($uri==='/owner/maps') {
   $ownerId = $auth->requireOwner();
-  if (session_status()===PHP_SESSION_ACTIVE) { @session_write_close(); }
   $cfgUp = $config['uploads'];
   if (!is_dir($cfgUp['maps_dir'])) @mkdir($cfgUp['maps_dir'], 0775, true);
 
@@ -325,115 +414,223 @@ if ($uri==='/owner/maps') {
 
   $arenas = $repo->listArenasByOwner($ownerId);
   page_header("Mapas do Campo");
-  echo "<h2>Carregar mapa por piso</h2>";
-  if (!$arenas) echo "<p>(cria primeiro um Campo)</p>";
-  echo "<form method='post' enctype='multipart/form-data' class='row g-3' style='max-width:700px'>
+  echo "<section class='card'><h2>Carregar mapa por piso</h2>";
+  if (!$arenas) echo "<p class='muted'>(cria primeiro um Campo)</p>";
+  echo "<form method='post' enctype='multipart/form-data' class='upload-zone' style='max-width:600px'>
     <input type='hidden' name='upload_map' value='1'>
-    <div class='col-md-6'><label class='form-label'>Campo</label><select class='form-select' name='arena_id' required>";
-  foreach ($arenas as $a) echo "<option value='{$a['id']}'>".htmlspecialchars($a['name'])."</option>";
+    <div class='form-group'><label for='arena_id'>Campo</label><select id='arena_id' name='arena_id' required>";
+  foreach ($arenas as $a) {
+    echo "<option value='{$a['id']}'>".htmlspecialchars($a['name'])."</option>";
+  }
   echo "</select></div>
-    <div class='col-md-3'><label class='form-label'>Piso</label><input class='form-control' type='number' name='floor' required></div>
-    <div class='col-md-9'><label class='form-label'>Ficheiro (png/jpg/webp/svg, max ".(int)$config['uploads']['max_mb']."MB)</label><input class='form-control' type='file' name='mapfile' required></div>
-    <div class='col-12'><button type='submit' class='btn btn-primary'>Upload</button></div>
-  </form>";
+    <div class='form-group'><label for='floor'>Piso</label><input id='floor' type='number' name='floor' required></div>
+    <div class='form-group'><label for='mapfile'>Ficheiro (png/jpg/webp/svg, max ".(int)$config['uploads']['max_mb']."MB)</label><input id='mapfile' type='file' name='mapfile' required></div>
+    <button type='submit' class='btn'>Enviar mapa</button>
+  </form></section>";
+
+  echo "<section class='card' style='margin-top:1.5rem;'><p class='muted'>Carrega mapas por piso para cada arena. Depois de enviados, ficam acessíveis na página do respetivo campo.</p></section>";
   page_footer(); exit;
 }
 /* ---------- HOME ---------- */
-echo "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>";
-echo "<title>StrikeZone Central</title>";
-echo "<link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css' rel='stylesheet'>";
-echo "<link rel='stylesheet' href='/assets/style.css'>";
-echo "</head><body data-bs-theme='dark' class='bg-dark text-light'>";
+$year = date('Y');
+echo <<<HTML
+<!doctype html>
+<html lang='pt'>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title>StrikeZone Central</title>
+  <link rel='preconnect' href='https://fonts.googleapis.com'>
+  <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+  <link href='https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap' rel='stylesheet'>
+  <link href='https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap' rel='stylesheet'>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg:#0b0d26;
+      --panel:#161942;
+      --panel-strong:#1e2256;
+      --accent:#f64b9b;
+      --accent-soft:#9f7eff;
+      --text:#f4f6ff;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      min-height:100vh;
+      background:radial-gradient(circle at top, #1d2363 0%, #090a1f 55%);
+      font-family:'Space Grotesk', system-ui, sans-serif;
+      color:var(--text);
+    }
+    main {
+      max-width:1200px;
+      margin:0 auto;
+      padding:3rem 1.5rem 4rem;
+    }
+    header.hero {
+      display:grid;
+      gap:3rem;
+      align-items:center;
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    }
+    .hero h1 { font-size:2.5rem; margin-bottom:1rem; }
+    .hero p { color:rgba(244,246,255,0.8); line-height:1.6; }
+    .hero-actions { display:flex; flex-wrap:wrap; gap:0.85rem; margin-top:1.5rem; }
+    .btn {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:0.95rem 1.7rem;
+      border-radius:999px;
+      font-weight:600;
+      font-size:1rem;
+      text-decoration:none;
+      transition:transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary {
+      background:linear-gradient(135deg,var(--accent),var(--accent-soft));
+      color:#fff;
+      box-shadow:0 18px 35px rgba(246,75,155,0.3);
+    }
+    .btn-secondary {
+      color:#fff;
+      border:1px solid rgba(255,255,255,0.2);
+      background:rgba(255,255,255,0.05);
+    }
+    .btn:hover { transform:translateY(-1px); }
+    .media-stack {
+      display:grid;
+      gap:1rem;
+    }
+    .media-stack img {
+      width:100%;
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,0.08);
+      box-shadow:0 20px 45px rgba(5,6,19,0.6);
+      object-fit:cover;
+    }
+    .feature-grid {
+      margin-top:4rem;
+      display:grid;
+      gap:1.5rem;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    }
+    .feature-card {
+      background:rgba(22,25,66,0.95);
+      border:1px solid rgba(255,255,255,0.05);
+      border-radius:22px;
+      box-shadow:0 25px 45px rgba(4,5,17,0.55);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+    .feature-card img { width:100%; height:180px; object-fit:cover; }
+    .feature-card .content { padding:1.4rem; }
+    .muted { color:rgba(244,246,255,0.7); }
+    section { margin-top:4rem; }
+    .steps {
+      background:rgba(13,15,37,0.85);
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:20px;
+      padding:2rem;
+      line-height:1.7;
+      box-shadow:0 30px 60px rgba(5,6,19,0.5);
+    }
+    .api-card {
+      background:#050513;
+      border-radius:20px;
+      padding:1.5rem;
+      border:1px solid rgba(255,255,255,0.08);
+      box-shadow:0 25px 45px rgba(0,0,0,0.55);
+    }
+    .api-card pre {
+      margin:0;
+      color:#f5f8ff;
+      font-family:'JetBrains Mono', monospace;
+      font-size:0.95rem;
+      white-space:pre-wrap;
+    }
+    footer {
+      text-align:center;
+      margin-top:4rem;
+      color:rgba(244,246,255,0.6);
+      font-size:0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class='hero'>
+      <div>
+        <img src='/assets/logo_strikezone.png' alt='StrikeZone' style='width:160px;margin-bottom:1.5rem;'>
+        <h1>Plataforma central para jogos de airsoft</h1>
+        <p>Localização indoor por beacons BLE, streaming em tempo real e gestão de partidas — tudo numa única consola criada para donos de campo.</p>
+        <div class='hero-actions'>
+          <a class='btn btn-primary' href='/owner/login'>Dono de Campo</a>
+          <a class='btn btn-secondary' href='/register'>Criar Conta</a>
+          <a class='btn btn-secondary' href='#api'>Ver API</a>
+        </div>
+      </div>
+      <div class='media-stack'>
+        <img src='/assets/FotoEquipa.jpeg' alt='Equipa StrikeZone'>
+ 
+      </div>
+    </header>
 
-/* ---------- HERO ---------- */
-echo "<section class='py-5 bg-black border-bottom border-secondary'>";
-echo "  <div class='container'>";
-echo "    <div class='row align-items-center g-4'>";
-echo "      <div class='col-lg-6'>";
-echo "        <h1 class='display-6 fw-semibold'>StrikeZone — Central</h1>";
-echo "        <p class='lead text-secondary'>Plataforma central para jogos de airsoft com localização indoor por beacons, streaming em tempo real e gestão de partidas.</p>";
-echo "        <div class='d-flex gap-2'>";
-echo "          <a class='btn btn-primary btn-lg' href='/owner/login'>Entrar como Dono</a>";
-echo "          <a class='btn btn-outline-light btn-lg' href='#api'>Ver API</a>";
-echo "        </div>";
-echo "      </div>";
-echo "      <div class='col-lg-6 text-center'>";
-echo "        <img class='img-fluid rounded border border-secondary shadow' alt='Jogadores de airsoft' src='/assets/FotoEquipa.jpeg'>";
-echo "      </div>";
-echo "    </div>";
-echo "  </div>";
-echo "</section>";
+    <section class='feature-grid'>
+      <article class='feature-card'>
+        <img src='/assets/BLE.jpeg' alt='Localização indoor'>
+        <div class='content'>
+          <h3>Localização Indoor</h3>
+          <p class='muted'>Integração com beacons BLE para determinar o piso de cada jogador com heurística e confiança ajustável.</p>
+        </div>
+      </article>
+      <article class='feature-card'>
+        <img src='/assets/GestãodeEquipas.png' alt='Gestão de Partidas'>
+        <div class='content'>
+          <h3>Gestão de Partidas</h3>
+          <p class='muted'>Cria arenas, equipas e códigos de entrada. Mantém o roster sincronizado e regista jogadores em segundos.</p>
+        </div>
+      </article>
+      <article class='feature-card'>
+        <img src='/assets/Taticas.png' alt='Tempo Real'>
+        <div class='content'>
+          <h3>Tempo Real</h3>
+          <p class='muted'>Publicação via Redis/Memurai e consumo em Server-Sent Events para dashboards ao vivo sem complicações.</p>
+        </div>
+      </article>
+    </section>
 
-// Features
-echo "<section class='py-5'>";
-echo "  <div class='container'>";
-echo "    <div class='row g-4'>";
-echo "      <div class='col-md-4'>";
-echo "        <div class='card h-100 bg-black border-secondary'>";
-echo "          <img class='card-img-top' alt='Beacons BLE' src='/assets/BLE.jpeg'>";
-echo "          <div class='card-body'>";
-echo "            <h3 class='h5 card-title'>Localização Indoor</h3>";
-echo "            <p class='card-text text-secondary'>Integração com beacons BLE para determinar o piso dos jogadores com heurística de confiança.</p>";
-echo "          </div>";
-echo "        </div>";
-echo "      </div>";
-echo "      <div class='col-md-4'>";
-echo "        <div class='card h-100 bg-black border-secondary'>";
-echo "          <img class='card-img-top' alt='Gestão de equipas' src='/assets/GestãodeEquipas.png'>";
-echo "          <div class='card-body'>";
-echo "            <h3 class='h5 card-title'>Gestão de Partidas</h3>";
-echo "            <p class='card-text text-secondary'>Cria arenas, jogos e equipas com códigos de entrada. Acompanha o roster em tempo real.</p>";
-echo "          </div>";
-echo "        </div>";
-echo "      </div>";
-echo "      <div class='col-md-4'>";
-echo "        <div class='card h-100 bg-black border-secondary'>";
-echo "          <img class='card-img-top' alt='Streaming de dados' src='/assets/Taticas.png'>";
-echo "          <div class='card-body'>";
-echo "            <h3 class='h5 card-title'>Tempo Real</h3>";
-echo "            <p class='card-text text-secondary'>Publicação via Redis/Memurai e consumo por Server‑Sent Events para dashboards ao vivo.</p>";
-echo "          </div>";
-echo "        </div>";
-echo "      </div>";
-echo "    </div>";
-echo "  </div>";
-echo "</section>";
+    <section>
+      <h2>Como funciona</h2>
+      <div class='steps'>
+        <ol>
+          <li>Jogadores enviam scans BLE (UUID, major, minor e RSSI) para a API.</li>
+          <li>O servidor mapeia cada beacon para um piso e aplica histerese para estabilizar a posição.</li>
+          <li>O estado permanece guardado em base de dados e é publicado em canais de equipa e jogo.</li>
+          <li>Dashboards consomem os eventos SSE e atualizam a visualização em tempo real.</li>
+        </ol>
+      </div>
+    </section>
 
-// How it works
-echo "<section class='py-5 border-top border-secondary'>";
-echo "  <div class='container'>";
-echo "    <h2 class='h4 mb-3'>Como Funciona</h2>";
-echo "    <ol class='text-secondary'>";
-echo "      <li>Jogadores enviam scans de beacons para a API com o RSSI observado.</li>";
-echo "      <li>O servidor mapeia cada beacon para um piso da arena e decide o piso atual (histerese).</li>";
-echo "      <li>O estado do jogador é persistido e a posição é publicada em canais Redis (equipa/jogo).</li>";
-echo "      <li>O dashboard consome os eventos em SSE e atualiza a posição em tempo real.</li>";
-echo "    </ol>";
-echo "  </div>";
-echo "</section>";
+    <section id='api'>
+      <h2>API (resumo)</h2>
+      <div class='api-card'>
+        <pre>POST /api/register              {email,password,display_name}
+POST /api/login                 {email,password}
+POST /api/arena/create          (Bearer)
+GET  /api/arena/list            (Bearer)
+POST /api/match/create          (Bearer)
+GET  /api/match/list?arena_id   (Bearer)
+POST /api/match/join            (Bearer)
+POST /api/match/register-player (Bearer)
+GET  /api/match/roster?match_id (Bearer)
+POST /api/scan                  (Bearer)</pre>
+      </div>
+    </section>
 
-// API section
-echo "<section id='api' class='py-5'>";
-echo "  <div class='container'>";
-echo "    <h2 class='h4 mb-3'>API (Resumo)</h2>";
-echo "    <pre class='bg-black border border-secondary rounded p-3 mb-0'>
-POST /api/register   {email,password,display_name}
-POST /api/login      {email,password}
-GET  /api/code/resolve?code=XXXXXX   or   POST /api/code/resolve {code}
-POST /api/arena/create  (Bearer)
-GET  /api/arena/list    (Bearer)
-POST /api/match/create  (Bearer)
-GET  /api/match/list?arena_id=...  (Bearer)
-POST /api/match/join    (Bearer)
-GET  /api/match/roster?match_id=... (Bearer)
-POST /api/scan          (Bearer)
-</pre>";
-echo "  </div>";
-echo "</section>";
-
-echo "<script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'></script></body></html>";
-
-
-
-
-
+    <footer>© {$year} StrikeZone Central</footer>
+  </main>
+</body>
+</html>
+HTML;
