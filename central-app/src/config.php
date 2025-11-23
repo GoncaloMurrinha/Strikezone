@@ -25,14 +25,25 @@ $env = static function (string $key, $default = null) {
 $redisPrefix = (string)$env('REDIS_PREFIX', 'airsoft');
 $redisPrefix = rtrim($redisPrefix, ':') . ':';
 
+$dbSocket = $env('DB_SOCKET');
+$hasSocket = is_string($dbSocket) && $dbSocket !== '';
+
+$dsn = $hasSocket
+    ? sprintf(
+        'mysql:unix_socket=%s;dbname=%s;charset=utf8mb4',
+        $dbSocket,
+        $env('DB_DATABASE', 'airsoft_central')
+    )
+    : sprintf(
+        'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
+        $env('DB_HOST', '127.0.0.1'),
+        $env('DB_PORT', '3306'),
+        $env('DB_DATABASE', 'airsoft_central')
+    );
+
 return [
   'db' => [
-    'dsn' => sprintf(
-      'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
-      $env('DB_HOST', '127.0.0.1'),
-      $env('DB_PORT', '3306'),
-      $env('DB_DATABASE', 'airsoft_central')
-    ),
+    'dsn' => $dsn,
     'user' => (string)$env('DB_USERNAME', 'root'),
     'pass' => (string)$env('DB_PASSWORD', ''),
     'opt'  => [

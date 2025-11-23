@@ -12,14 +12,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
   exit;
 }
 
-// Configuração da base de dados
-$config = [
-  'db' => [
-    'dsn'  => 'mysql:host=localhost;dbname=airsoft_central;charset=utf8mb4',
-    'user' => 'root',
-    'pass' => ''
-  ]
-];
+// Configuração da base de dados (partilha com o restante app)
+if (!isset($config)) {
+  $config = require __DIR__ . '/../../src/config.php';
+}
+if (!isset($pdo) || !($pdo instanceof PDO)) {
+  require_once __DIR__ . '/../../src/db.php';
+  $pdo = (new DB($config['db']))->pdo();
+}
 
 function bad(int $code, string $msg): void {
   http_response_code($code);
@@ -42,14 +42,9 @@ if ($display_name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen
   bad(422, 'Campos obrigatórios em falta ou inválidos');
 }
 
-try {
-  $pdo = new PDO(
-    $config['db']['dsn'],
-    $config['db']['user'],
-    $config['db']['pass'],
-    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
-  );
+$email = strtolower($email);
 
+try {
   // Verifica se já existe utilizador
   $st = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
   $st->execute([$email]);

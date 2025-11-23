@@ -20,6 +20,7 @@ Antes de começar, certifica-te de que tens instalados:
 | **Git** | Controlo de versão | https://git-scm.com/downloads |
 | **Composer** | Gestor de dependências PHP | https://getcomposer.org/download/ |
 | **Memurai** | Alternativa a Redis no Windows | https://www.memurai.com/download |
+| **Homebrew** *(macOS)* | Gestor de pacotes para instalar PHP/Redis/MySQL | https://brew.sh |
 | **Visual Studio Code** *(opcional)* | Editor recomendado | https://code.visualstudio.com |
 
 ---
@@ -87,6 +88,45 @@ php -S 0.0.0.0:8080 -t public
 ```
 
 Abrir: http://localhost:8080
+
+### 🍎 Guia rápido macOS
+
+macOS não traz PHP/Composer nem Redis por defeito, por isso o fluxo recomendado é:
+
+1. **Instalar o Homebrew**
+   ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+   eval "$(/opt/homebrew/bin/brew shellenv)"
+   ```
+2. **Instalar toolchain**
+   ```bash
+   brew install php composer redis mysql
+   ```
+   (Opcional: podes continuar a usar o XAMPP/MAMP para MySQL; neste caso anota o caminho do socket, ex.: `/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock`).
+3. **Configurar variáveis do `.env`**
+   ```ini
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=airsoft_central
+   DB_USERNAME=root
+   DB_PASSWORD=
+   DB_SOCKET=/opt/homebrew/var/mysql/mysql.sock   # usa o caminho do XAMPP se for o caso
+   ```
+4. **Arrancar serviços**
+   - MySQL (Homebrew): `brew services start mysql`
+   - Redis: `brew services start redis`
+   - Se estiveres em XAMPP, usa o `Manager-OSX.app` ou `sudo /Applications/XAMPP/xamppfiles/xampp startmysql`.
+5. **Importar schema**
+   ```bash
+   mysql -u root < sql/schema.sql
+   ```
+6. **Servidor PHP**
+   ```bash
+   php -S 0.0.0.0:8080 -t public
+   ```
+
+Com estes passos tens o stack completo a correr localmente no macOS (Monterey+ ou Apple Silicon). Caso prefiras Docker, podes criar um `docker-compose` com `mysql` e `redis` e apontar o `.env` para os containers.
 
 ## 🧪 Testes unitários
 
