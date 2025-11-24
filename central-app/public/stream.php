@@ -35,7 +35,10 @@ if ($mr->get($stopKey)!==null) {
 }
 echo "event: hello\ndata: ".json_encode(['ok'=>true,'team_id'=>$teamId])."\n\n"; @ob_flush(); @flush();
 
-$mr->subscribeLoop($chan, function(string $payload) use ($teamId){
+$start = microtime(true);
+$mr->subscribeLoop(
+  $chan,
+  function(string $payload) use ($teamId){
   $t = ltrim($payload);
   if ($t !== '' && $t[0] === '{') {
     $j = json_decode($payload, true);
@@ -48,4 +51,8 @@ $mr->subscribeLoop($chan, function(string $payload) use ($teamId){
   echo "event: pos\ndata: $payload\n\n";
   @ob_flush(); @flush();
   if (function_exists('connection_aborted') && connection_aborted()) { exit; }
-});
+  },
+  function() use ($start) {
+    return (microtime(true) - $start) >= 110;
+  }
+);

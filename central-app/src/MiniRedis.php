@@ -56,10 +56,13 @@ final class MiniRedis {
     $this->send(['DEL', $key]);
     return (int)$this->readResp();
   }
-  public function subscribeLoop(string $chan, callable $onMessage): void {
+  public function subscribeLoop(string $chan, callable $onMessage, ?callable $shouldStop=null): void {
     $this->send(['SUBSCRIBE', $chan]);
     $this->readResp();
     while (!feof($this->sock)) {
+      if ($shouldStop && $shouldStop()) {
+        break;
+      }
       if (function_exists('connection_aborted') && connection_aborted()) {
         break;
       }

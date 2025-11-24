@@ -34,7 +34,10 @@ if ($mr->get($stopKey)!==null) {
 echo "retry: 10000\n\n"; @ob_flush(); @flush();
 echo "event: hello\ndata: ".json_encode(['ok'=>true,'match_id'=>$matchId])."\n\n"; @ob_flush(); @flush();
 
-$mr->subscribeLoop($chan, function(string $payload) use ($matchId, $stopKey, $mr){
+$start = microtime(true);
+$mr->subscribeLoop(
+  $chan,
+  function(string $payload) use ($matchId, $stopKey, $mr){
   $t = ltrim($payload);
   if ($t !== '' && $t[0] === '{') {
     $j = json_decode($payload, true);
@@ -52,4 +55,8 @@ $mr->subscribeLoop($chan, function(string $payload) use ($matchId, $stopKey, $mr
   echo "event: pos\ndata: $payload\n\n";
   @ob_flush(); @flush();
   if (function_exists('connection_aborted') && connection_aborted()) { exit; }
-});
+  },
+  function() use ($start) {
+    return (microtime(true) - $start) >= 110;
+  }
+);
