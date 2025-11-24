@@ -81,13 +81,14 @@ final class Repository {
   // ----- MATCHES -----
   public function createMatch(
     int $arenaId, string $name, string $startsAt,
-    string $teamA, string $teamB, string $codeA, string $codeB
+    string $teamA, string $teamB, string $codeA, string $codeB,
+    string $codeMode = 'text'
   ): int {
     $st = $this->pdo->prepare('
-      INSERT INTO matches (arena_id,name,starts_at,team_a_name,team_b_name,team_a_code,team_b_code)
-      VALUES (?,?,?,?,?,?,?)
+      INSERT INTO matches (arena_id,name,starts_at,team_a_name,team_b_name,team_a_code,team_b_code,code_display_mode)
+      VALUES (?,?,?,?,?,?,?,?)
     ');
-    $st->execute([$arenaId,$name,$startsAt,$teamA,$teamB,$codeA,$codeB]);
+    $st->execute([$arenaId,$name,$startsAt,$teamA,$teamB,$codeA,$codeB,$codeMode]);
     return (int)$this->pdo->lastInsertId();
   }
   public function listMatchesByArena(int $arenaId): array {

@@ -58,14 +58,27 @@ final class MiniRedis {
   }
   public function subscribeLoop(string $chan, callable $onMessage): void {
     $this->send(['SUBSCRIBE', $chan]);
-    // read subscription confirmation
     $this->readResp();
     while (!feof($this->sock)) {
+      if (function_exists('connection_aborted') && connection_aborted()) {
+        break;
+      }
+      $read = [$this->sock];
+      $write = $except = null;
+      $ready = @stream_select($read, $write, $except, 0, 200000); // 200ms
+      if ($ready === false) {
+        break;
+      }
+      if ($ready === 0) {
+        continue;
+      }
       $resp = $this->readResp();
       if (is_array($resp) && ($resp[0] ?? '') === 'message') {
-        $onMessage($resp[2]); // payload
+        $res = $onMessage($resp[2]);
+        if ($res === false) {
+          break;
+        }
       }
-      usleep(50000);
     }
   }
 }

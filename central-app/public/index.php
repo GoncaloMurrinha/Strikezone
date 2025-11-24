@@ -1,6 +1,6 @@
 ﻿<?php
 
-
+require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../src/db.php';
 require __DIR__ . '/../src/helpers.php';
 require __DIR__ . '/../src/Repository.php';
@@ -9,13 +9,15 @@ require __DIR__ . '/../src/Jwt.php';
 require __DIR__ . '/../src/Realtime.php';
 require __DIR__ . '/../src/ApiController.php';
 require __DIR__ . '/../src/OwnerAuth.php';
+require __DIR__ . '/../src/QrManager.php';
 
 $config = require __DIR__ . '/../src/config.php';
+$qr = new QrManager($config['qr']);
 $pdo = (new DB($config['db']))->pdo();
 $repo = new Repository($pdo);
 $fe = new FloorEngine();
 $rt = new Realtime($config['redis']);
-$api = new ApiController($repo,$fe,$rt,$config);
+$api = new ApiController($repo,$fe,$rt,$qr,$config);
 $auth = new OwnerAuth($repo);
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
@@ -240,10 +242,15 @@ if (preg_match('#^/owner/arena/(\d+)$#', $uri, $m)) {
     $start= trim($_POST['starts_at'] ?? '');
     $ta   = trim($_POST['team_a'] ?? 'Azuis');
     $tb   = trim($_POST['team_b'] ?? 'Vermelhos');
+    $mode = strtolower((string)($_POST['code_mode'] ?? 'text'));
+    if (!in_array($mode, ['text','qr'], true)) { $mode = 'text'; }
     if ($name && $start){
       $codeA = ApiController::randomCode(6);
       $codeB = ApiController::randomCode(6);
-      $mid = $repo->createMatch($arenaId,$name,$start,$ta,$tb,$codeA,$codeB);
+      $mid = $repo->createMatch($arenaId,$name,$start,$ta,$tb,$codeA,$codeB,$mode);
+      if ($mode === 'qr') {
+        try { $qr->ensureForMatch($mid, $codeA, $codeB); } catch (\Throwable $e) { error_log('QR gen failed: '.$e->getMessage()); }
+      }
       header("Location: /owner/match/$mid"); exit;
     }
   }
@@ -266,12 +273,14 @@ if (preg_match('#^/owner/arena/(\d+)$#', $uri, $m)) {
       $teams = htmlspecialchars($mrow['team_a_name'])." vs ".htmlspecialchars($mrow['team_b_name']);
       $codeA = htmlspecialchars($mrow['team_a_code']);
       $codeB = htmlspecialchars($mrow['team_b_code']);
+      $codeMode = htmlspecialchars($mrow['code_display_mode'] ?? 'text');
+      $modeBadge = $codeMode === 'qr' ? "<span class='pill pill-muted'>QR</span>" : '';
       echo "<tr>
         <td>$mid</td>
         <td>$name</td>
         <td>$start</td>
         <td>$teams</td>
-        <td>A=<code>$codeA</code> B=<code>$codeB</code></td>
+        <td>A=<code>$codeA</code> B=<code>$codeB</code> $modeBadge</td>
         <td><a class='btn btn-ghost' href='/owner/match/$mid'>Ver ao vivo</a></td>
       </tr>";
     }
@@ -287,6 +296,11 @@ if (preg_match('#^/owner/arena/(\d+)$#', $uri, $m)) {
       <div class='form-group'><label for='match_start'>Início (YYYY-MM-DD HH:MM:SS)</label><input id='match_start' name='starts_at' required></div>
       <div class='form-group'><label for='team_a'>Equipa A</label><input id='team_a' name='team_a' value='Azuis'></div>
       <div class='form-group'><label for='team_b'>Equipa B</label><input id='team_b' name='team_b' value='Vermelhos'></div>
+      <div class='form-group'>
+        <label>Como prefere partilhar os códigos?</label>
+        <label class='radio-inline'><input type='radio' name='code_mode' value='text' checked> Mostrar em texto</label>
+        <label class='radio-inline'><input type='radio' name='code_mode' value='qr'> Gerar QR Codes</label>
+      </div>
       <button type='submit' class='btn'>Criar jogo</button>
     </form></section>";
 
@@ -332,11 +346,35 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
   $maps = $repo->listMapsByArena((int)$match['arena_id']);
 
   page_header("Ao vivo - Match #$matchId");
-  echo "<a class='btn btn-ghost' href='/owner/arena/{$match['arena_id']}'>&larr; Voltar ao campo</a>";
+  $backUrl = "/owner/arena/{$match['arena_id']}";
+  echo "<a class='btn btn-ghost' id='leave-match' href='$backUrl'>&larr; Voltar ao campo</a>";
   echo "<section class='card' style='margin-top:1.5rem;'>";
+  $codeMode = $match['code_display_mode'] ?? 'text';
+  $teamACode = htmlspecialchars($match['team_a_code']);
+  $teamBCode = htmlspecialchars($match['team_b_code']);
   echo "<h2>".htmlspecialchars($match['name'])."</h2>";
   echo "<p class='muted'>A: ".htmlspecialchars($match['team_a_name'])." &nbsp;&nbsp; B: ".htmlspecialchars($match['team_b_name'])."</p>";
-  echo "<p class='muted'>Códigos — A=<code>{$match['team_a_code']}</code> | B=<code>{$match['team_b_code']}</code></p>";
+  if ($codeMode === 'qr') {
+    $qrAUrl = $qr->urlFor($matchId,'A');
+    $qrBUrl = $qr->urlFor($matchId,'B');
+    if (!$qrAUrl || !$qrBUrl) {
+      try { $qr->ensureForMatch($matchId, $match['team_a_code'], $match['team_b_code']); } catch (\Throwable $e) { error_log('QR regen failed: '.$e->getMessage()); }
+      $qrAUrl = $qr->urlFor($matchId,'A');
+      $qrBUrl = $qr->urlFor($matchId,'B');
+    }
+    if ($qrAUrl && $qrBUrl) {
+      $qrA = htmlspecialchars($qrAUrl);
+      $qrB = htmlspecialchars($qrBUrl);
+      echo "<div class='qr-grid'>";
+      echo "<div class='qr-card'><strong>Equipa A</strong><img src='$qrA' alt='QR Equipa A'><span class='muted'>Código: <code>$teamACode</code></span></div>";
+      echo "<div class='qr-card'><strong>Equipa B</strong><img src='$qrB' alt='QR Equipa B'><span class='muted'>Código: <code>$teamBCode</code></span></div>";
+      echo "</div>";
+    } else {
+      echo "<p class='muted'>Códigos — A=<code>$teamACode</code> | B=<code>$teamBCode</code></p>";
+    }
+  } else {
+    echo "<p class='muted'>Códigos — A=<code>$teamACode</code> | B=<code>$teamBCode</code></p>";
+  }
   echo "</section>";
 
   echo "<section class='card' style='margin-top:1.5rem;'>";
@@ -354,8 +392,10 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
   }
 
   $initialStateJson = json_encode($initialState, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+  $backUrlJs = json_encode($backUrl, JSON_UNESCAPED_SLASHES);
   echo "<script>
     const matchId = $matchId;
+    const backUrl = $backUrlJs;
     const A = document.getElementById('teamA');
     const B = document.getElementById('teamB');
     const state = $initialStateJson;
@@ -380,6 +420,33 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
         render();
       }catch(e){}
     });
+    const stopStream = ()=>{
+      if (es.readyState !== EventSource.CLOSED) {
+        es.close();
+      }
+    };
+    const leaveBtn = document.getElementById('leave-match');
+    if (leaveBtn) {
+      leaveBtn.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        stopStream();
+        const data = new URLSearchParams({halt:'1'}).toString();
+        try {
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon('/stream_match.php?match_id='+matchId, data);
+          } else {
+            fetch('/stream_match.php?match_id='+matchId, {
+              method:'POST',
+              headers:{'Content-Type':'application/x-www-form-urlencoded'},
+              body:data
+            }).catch(()=>{});
+          }
+        } catch(e) {}
+        window.location.href = backUrl;
+      });
+    }
+    window.addEventListener('beforeunload', stopStream);
+    window.addEventListener('pagehide', stopStream);
   </script>";
 
   page_footer(); exit;

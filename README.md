@@ -112,6 +112,9 @@ macOS não traz PHP/Composer nem Redis por defeito, por isso o fluxo recomendado
    DB_USERNAME=root
    DB_PASSWORD=
    DB_SOCKET=/opt/homebrew/var/mysql/mysql.sock   # usa o caminho do XAMPP se for o caso
+   QR_OUTPUT_DIR=/Users/<tu_user>/Strikezone/central-app/public/uploads/qrcodes
+   QR_BASE_URL=/uploads/qrcodes
+   QR_SIZE=220
    ```
 4. **Arrancar serviços**
    - MySQL (Homebrew): `brew services start mysql`
@@ -160,3 +163,5 @@ Sugestão opcional (DB): adicionar índice em `beacons(arena_id)` para acelerar 
 
 - Configurações: `central-app/src/config.php` (DB, Redis/Memurai, uploads, JWT).
 - Endpoints e UI: `central-app/public/index.php` (roteamento simples em PHP embutido).
+- Quando crias um jogo no painel de dono és questionado se preferes distribuir os códigos em texto ou por QR code. Essa escolha fica guardada em `matches.code_display_mode` — se já tinhas a base criada antes desta atualização corre `ALTER TABLE matches ADD COLUMN code_display_mode ENUM('text','qr') NOT NULL DEFAULT 'text';`.
+- Os QR codes são gerados uma única vez com a biblioteca [endroid/qr-code](https://github.com/endroid/qr-code) e guardados em `public/uploads/qrcodes/` como ficheiros PNG. Podes customizar a localização via `.env` (`QR_OUTPUT_DIR`, `QR_BASE_URL`, `QR_SIZE`). Depois disto o dashboard lê diretamente os ficheiros locais, evitando chamadas lentas ao serviço externo.

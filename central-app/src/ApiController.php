@@ -6,6 +6,7 @@ final class ApiController {
     private Repository $repo,
     private FloorEngine $fe,
     private ?Realtime $rt,
+    private ?QrManager $qr,
     private array $cfg
   ) {}
   private function ownerOwnsArena(int $ownerId, int $arenaId): bool {
@@ -165,6 +166,10 @@ final class ApiController {
     $starts  = trim((string)($in['starts_at'] ?? ''));
     $teamA   = trim((string)($in['team_a_name'] ?? 'Alpha'));
     $teamB   = trim((string)($in['team_b_name'] ?? 'Bravo'));
+    $codeMode = strtolower((string)($in['code_mode'] ?? 'text'));
+    if (!in_array($codeMode, ['text','qr'], true)) {
+      $codeMode = 'text';
+    }
     if ($arenaId<=0 || $name==='' || $starts===''){ json_out(['error'=>'invalid_input'],422); return; }
 
     // (opcional) validar dono do arena
@@ -173,8 +178,15 @@ final class ApiController {
 
     $codeA = self::randomCode(6);
     $codeB = self::randomCode(6);
-    $mid = $this->repo->createMatch($arenaId,$name,$starts,$teamA,$teamB,$codeA,$codeB);
-    json_out(['ok'=>true,'match_id'=>$mid,'codes'=>['A'=>$codeA,'B'=>$codeB]]);
+    $mid = $this->repo->createMatch($arenaId,$name,$starts,$teamA,$teamB,$codeA,$codeB,$codeMode);
+    if ($codeMode === 'qr' && $this->qr) {
+      try {
+        $this->qr->ensureForMatch($mid, $codeA, $codeB);
+      } catch (\Throwable $e) {
+        error_log('QR generation failed: '.$e->getMessage());
+      }
+    }
+    json_out(['ok'=>true,'match_id'=>$mid,'codes'=>['A'=>$codeA,'B'=>$codeB],'code_mode'=>$codeMode]);
   }
 
   // GET /api/match/list?arena_id=...

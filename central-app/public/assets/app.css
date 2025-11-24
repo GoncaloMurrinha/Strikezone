@@ -175,6 +175,45 @@ form input:focus, form select:focus {
   background:rgba(255,255,255,0.08);
   font-size:0.85rem;
 }
+.pill-muted {
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  color:var(--muted);
+}
+
+.radio-inline {
+  display:inline-flex;
+  align-items:center;
+  gap:0.4rem;
+  font-size:0.95rem;
+  margin-right:0.8rem;
+}
+.radio-inline input[type="radio"] {
+  accent-color:var(--accent);
+}
+
+.qr-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:1rem;
+  margin:1rem 0;
+}
+.qr-card {
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:16px;
+  padding:1rem;
+  text-align:center;
+}
+.qr-card img {
+  max-width:100%;
+  border-radius:12px;
+  background:#fff;
+}
+.qr-card .muted {
+  margin-top:0.5rem;
+  display:block;
+}
 
 .muted { color:var(--muted); }
 

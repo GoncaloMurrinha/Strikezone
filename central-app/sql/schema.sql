@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS matches (
   team_b_name VARCHAR(80) NOT NULL,
   team_a_code VARCHAR(10) NOT NULL UNIQUE,
   team_b_code VARCHAR(10) NOT NULL UNIQUE,
+  code_display_mode ENUM('text','qr') NOT NULL DEFAULT 'text',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (arena_id) REFERENCES arenas(id) ON DELETE CASCADE,
   INDEX idx_arena (arena_id)

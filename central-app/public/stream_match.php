@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../src/MiniRedis.php';
 
 $config = require __DIR__ . '/../src/config.php';
@@ -18,15 +19,22 @@ $mr = new MiniRedis($config['redis']['host'], (int)$config['redis']['port'], (fl
 $chan = ($config['redis']['prefix'] ?? 'airsoft:') . "match:$matchId";
 $stopKey = ($config['redis']['prefix'] ?? 'airsoft:') . "match:$matchId:stopped";
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['halt'])) {
+  $mr->set($stopKey, '1', 5);
+  $mr->publish($chan, json_encode(['ctrl'=>'stop']));
+  echo json_encode(['ok'=>true]);
+  exit;
+}
+
 // Advise client to wait before reconnecting
-echo "retry: 10000\n\n"; @ob_flush(); @flush();
 if ($mr->get($stopKey)!==null) {
   echo "event: stopped\ndata: {\"match_id\":$matchId}\n\n"; @ob_flush(); @flush();
   exit;
 }
+echo "retry: 10000\n\n"; @ob_flush(); @flush();
 echo "event: hello\ndata: ".json_encode(['ok'=>true,'match_id'=>$matchId])."\n\n"; @ob_flush(); @flush();
 
-$mr->subscribeLoop($chan, function(string $payload) use ($matchId){
+$mr->subscribeLoop($chan, function(string $payload) use ($matchId, $stopKey, $mr){
   $t = ltrim($payload);
   if ($t !== '' && $t[0] === '{') {
     $j = json_decode($payload, true);
@@ -35,6 +43,11 @@ $mr->subscribeLoop($chan, function(string $payload) use ($matchId){
       @ob_flush(); @flush();
       exit;
     }
+  }
+  if ($mr->get($stopKey)!==null) {
+    echo "event: stopped\ndata: {\"match_id\":$matchId}\n\n";
+    @ob_flush(); @flush();
+    exit;
   }
   echo "event: pos\ndata: $payload\n\n";
   @ob_flush(); @flush();

@@ -69,4 +69,9 @@ return [
     'maps_url' => (string)$env('UPLOADS_MAPS_URL', '/uploads/maps'),
     'max_mb'   => (int)$env('UPLOAD_MAX_MB', 15),
   ],
+  'qr' => [
+    'dir' => (string)$env('QR_OUTPUT_DIR', __DIR__ . '/../public/uploads/qrcodes'),
+    'url' => (string)$env('QR_BASE_URL', '/uploads/qrcodes'),
+    'size' => (int)$env('QR_SIZE', 220),
+  ],
 ];
