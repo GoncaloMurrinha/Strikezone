@@ -57,7 +57,7 @@ class RepoRegisterPlayer extends Repository {
 
 function makeApi(RepoRegisterPlayer $repo, ?string $authToken = null): ApiController {
   $cfg = ['api'=>['jwt_secret'=>'secret','jwt_issuer'=>'owner','token_ttl'=>3600]];
-  $api = new ApiController($repo, new FloorEngine(), null, $cfg);
+  $api = new ApiController($repo, new FloorEngine(), null, null, $cfg);
   if ($authToken === null) {
     $authToken = Jwt::sign(['uid'=>99,'name'=>'Owner','email'=>'owner@test'], 'secret', 'owner', 3600);
   }

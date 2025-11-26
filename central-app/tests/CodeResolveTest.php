@@ -17,7 +17,7 @@ register_test('ApiController::codeResolve returns team=A', function(){
   $_SERVER['REQUEST_METHOD'] = 'GET';
   $_GET['code'] = 'AAAAAA';
   $secret = 'x';
-  $api = new ApiController(makeRepoWithSample(), new FloorEngine(), null, ['api'=>['jwt_secret'=>$secret,'jwt_issuer'=>'y','token_ttl'=>3600]]);
+  $api = new ApiController(makeRepoWithSample(), new FloorEngine(), null, null, ['api'=>['jwt_secret'=>$secret,'jwt_issuer'=>'y','token_ttl'=>3600]]);
   ob_start();
   $api->codeResolve();
   $out = ob_get_clean();
@@ -36,7 +36,7 @@ register_test('ApiController::codeResolve returns team=B', function(){
   $_SERVER['REQUEST_METHOD'] = 'GET';
   $_GET['code'] = 'BBBBBB';
   $secret = 'x';
-  $api = new ApiController(makeRepoWithSample(), new FloorEngine(), null, ['api'=>['jwt_secret'=>$secret,'jwt_issuer'=>'y','token_ttl'=>3600]]);
+  $api = new ApiController(makeRepoWithSample(), new FloorEngine(), null, null, ['api'=>['jwt_secret'=>$secret,'jwt_issuer'=>'y','token_ttl'=>3600]]);
   ob_start();
   $api->codeResolve();
   $out = ob_get_clean();
