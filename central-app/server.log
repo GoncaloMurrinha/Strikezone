@@ -1,0 +1,341 @@
+[Thu Nov 27 14:53:40 2025] PHP 8.5.0 Development Server (http://0.0.0.0:8080) started
+[Thu Nov 27 14:53:48 2025] 127.0.0.1:57826 Accepted
+[Thu Nov 27 14:54:18 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 14:54:18 2025] 127.0.0.1:57826 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 14:54:18 2025] 127.0.0.1:57826 Closing
+[Thu Nov 27 14:54:18 2025] 127.0.0.1:57829 Accepted
+[Thu Nov 27 14:54:18 2025] 127.0.0.1:57829 Closing
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57846 Accepted
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57846 Closing
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57848 Accepted
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57849 Accepted
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57850 Accepted
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57851 Accepted
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57848 [200]: GET /assets/app.css
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57848 Closing
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57849 [200]: GET /assets/logo_strikezone.png
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57849 Closing
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57850 [200]: GET /uploads/qrcodes/match-3-A.png
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57850 Closing
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57851 [200]: GET /uploads/qrcodes/match-3-B.png
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57851 Closing
+[Thu Nov 27 14:54:31 2025] 127.0.0.1:57853 Accepted
+[Thu Nov 27 14:55:01 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 14:55:01 2025] 127.0.0.1:57853 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 14:55:01 2025] 127.0.0.1:57853 Closing
+[Thu Nov 27 14:55:01 2025] 127.0.0.1:57856 Accepted
+[Thu Nov 27 14:55:01 2025] 127.0.0.1:57856 [200]: POST /stream_match.php?match_id=3
+[Thu Nov 27 14:55:01 2025] 127.0.0.1:57856 Closing
+[Thu Nov 27 14:55:01 2025] 127.0.0.1:57862 Accepted
+[Thu Nov 27 14:55:01 2025] 127.0.0.1:57862 Closing
+[Thu Nov 27 14:55:01 2025] 127.0.0.1:57864 Accepted
+[Thu Nov 27 14:55:01 2025] 127.0.0.1:57865 Accepted
+[Thu Nov 27 14:55:01 2025] 127.0.0.1:57864 [200]: GET /assets/app.css
+[Thu Nov 27 14:55:01 2025] 127.0.0.1:57865 [200]: GET /assets/logo_strikezone.png
+[Thu Nov 27 14:55:01 2025] 127.0.0.1:57864 Closing
+[Thu Nov 27 14:55:01 2025] 127.0.0.1:57865 Closing
+[Thu Nov 27 14:55:21 2025] 127.0.0.1:57934 Accepted
+[Thu Nov 27 14:55:21 2025] [codeResolve] method=GET code=KDQKJX
+[Thu Nov 27 14:55:21 2025] [codeResolve] resolved side=B match_id=3
+[Thu Nov 27 14:55:21 2025] 127.0.0.1:57934 Closing
+[Thu Nov 27 14:55:32 2025] 127.0.0.1:57940 Accepted
+[Thu Nov 27 14:55:32 2025] 127.0.0.1:57940 Closing
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57962 Accepted
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57962 Closing
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57963 Accepted
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57964 Accepted
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57965 Accepted
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57966 Accepted
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57963 [200]: GET /assets/app.css
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57964 [200]: GET /assets/logo_strikezone.png
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57963 Closing
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57964 Closing
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57965 [200]: GET /uploads/qrcodes/match-3-A.png
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57965 Closing
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57966 [200]: GET /uploads/qrcodes/match-3-B.png
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57966 Closing
+[Thu Nov 27 14:56:25 2025] 127.0.0.1:57969 Accepted
+[Thu Nov 27 14:56:55 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 14:56:55 2025] 127.0.0.1:57969 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 14:56:55 2025] 127.0.0.1:57969 Closing
+[Thu Nov 27 14:57:05 2025] 127.0.0.1:57986 Accepted
+[Thu Nov 27 14:57:35 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 14:57:35 2025] 127.0.0.1:57986 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 14:57:35 2025] 127.0.0.1:57986 Closing
+[Thu Nov 27 14:57:45 2025] 127.0.0.1:58004 Accepted
+[Thu Nov 27 14:58:15 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 14:58:15 2025] 127.0.0.1:58004 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 14:58:15 2025] 127.0.0.1:58004 Closing
+[Thu Nov 27 14:58:25 2025] 127.0.0.1:58022 Accepted
+[Thu Nov 27 14:58:55 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 14:58:55 2025] 127.0.0.1:58022 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 14:58:55 2025] 127.0.0.1:58022 Closing
+[Thu Nov 27 14:59:05 2025] 127.0.0.1:58041 Accepted
+[Thu Nov 27 14:59:35 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 14:59:35 2025] 127.0.0.1:58041 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 14:59:35 2025] 127.0.0.1:58041 Closing
+[Thu Nov 27 14:59:45 2025] 127.0.0.1:58058 Accepted
+[Thu Nov 27 15:00:15 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 15:00:15 2025] 127.0.0.1:58058 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 15:00:15 2025] 127.0.0.1:58058 Closing
+[Thu Nov 27 15:00:25 2025] 127.0.0.1:58077 Accepted
+[Thu Nov 27 15:00:55 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 15:00:55 2025] 127.0.0.1:58077 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 15:00:55 2025] 127.0.0.1:58077 Closing
+[Thu Nov 27 15:01:05 2025] 127.0.0.1:58097 Accepted
+[Thu Nov 27 15:01:35 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 15:01:35 2025] 127.0.0.1:58097 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 15:01:35 2025] 127.0.0.1:58097 Closing
+[Thu Nov 27 15:01:45 2025] 127.0.0.1:58114 Accepted
+[Thu Nov 27 15:02:15 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 15:02:15 2025] 127.0.0.1:58114 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 15:02:15 2025] 127.0.0.1:58114 Closing
+[Thu Nov 27 15:02:25 2025] 127.0.0.1:58132 Accepted
+[Thu Nov 27 15:02:55 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 15:02:55 2025] 127.0.0.1:58132 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 15:02:55 2025] 127.0.0.1:58132 Closing
+[Thu Nov 27 15:03:05 2025] 127.0.0.1:58149 Accepted
+[Thu Nov 27 15:03:35 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 15:03:35 2025] 127.0.0.1:58149 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 15:03:35 2025] 127.0.0.1:58149 Closing
+[Thu Nov 27 15:03:45 2025] 127.0.0.1:58165 Accepted
+[Thu Nov 27 15:04:15 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 15:04:15 2025] 127.0.0.1:58165 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 15:04:15 2025] 127.0.0.1:58165 Closing
+[Thu Nov 27 15:04:25 2025] 127.0.0.1:58184 Accepted
+[Thu Nov 27 15:04:55 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 15:04:55 2025] 127.0.0.1:58184 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 15:04:55 2025] 127.0.0.1:58184 Closing
+[Thu Nov 27 15:04:57 2025] 127.0.0.1:58199 Accepted
+[Thu Nov 27 15:04:57 2025] 127.0.0.1:58199 [200]: POST /stream_match.php?match_id=3
+[Thu Nov 27 15:04:57 2025] 127.0.0.1:58199 Closing
+[Thu Nov 27 15:04:57 2025] 127.0.0.1:58202 Accepted
+[Thu Nov 27 15:04:57 2025] 127.0.0.1:58202 Closing
+[Thu Nov 27 15:04:57 2025] 127.0.0.1:58203 Accepted
+[Thu Nov 27 15:04:57 2025] 127.0.0.1:58204 Accepted
+[Thu Nov 27 15:04:57 2025] 127.0.0.1:58203 [200]: GET /assets/app.css
+[Thu Nov 27 15:04:57 2025] 127.0.0.1:58203 Closing
+[Thu Nov 27 15:04:57 2025] 127.0.0.1:58204 [200]: GET /assets/logo_strikezone.png
+[Thu Nov 27 15:04:57 2025] 127.0.0.1:58204 Closing
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58222 Accepted
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58223 Accepted
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58224 Accepted
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58225 Accepted
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58226 Accepted
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58227 Accepted
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58223 Closing
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58222 [200]: GET /assets/app.css
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58222 Closing
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58224 [200]: GET /assets/logo_strikezone.png
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58224 Closing
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58225 [200]: GET /uploads/qrcodes/match-3-A.png
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58225 Closing
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58226 [200]: GET /uploads/qrcodes/match-3-B.png
+[Thu Nov 27 15:05:42 2025] 127.0.0.1:58226 Closing
+[Thu Nov 27 15:06:13 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 15:06:13 2025] 127.0.0.1:58227 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 15:06:13 2025] 127.0.0.1:58227 Closing
+[Thu Nov 27 15:06:23 2025] 127.0.0.1:58245 Accepted
+[Thu Nov 27 15:06:53 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 15:06:53 2025] 127.0.0.1:58245 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 15:06:53 2025] 127.0.0.1:58245 Closing
+[Thu Nov 27 15:07:03 2025] 127.0.0.1:58262 Accepted
+[Thu Nov 27 15:07:33 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 15:07:33 2025] 127.0.0.1:58262 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 15:07:33 2025] 127.0.0.1:58262 Closing
+[Thu Nov 27 19:17:21 2025] 127.0.0.1:61878 Accepted
+[Thu Nov 27 19:17:51 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:3', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 19:17:51 2025] 127.0.0.1:61878 [200]: GET /stream_match.php?match_id=3 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 19:17:51 2025] 127.0.0.1:61878 Closing
+[Thu Nov 27 19:17:51 2025] 127.0.0.1:61882 Accepted
+[Thu Nov 27 19:17:51 2025] 127.0.0.1:61882 [200]: POST /stream_match.php?match_id=3
+[Thu Nov 27 19:17:51 2025] 127.0.0.1:61882 Closing
+[Thu Nov 27 19:17:51 2025] 127.0.0.1:61896 Accepted
+[Thu Nov 27 19:17:51 2025] 127.0.0.1:61896 Closing
+[Thu Nov 27 19:17:51 2025] 127.0.0.1:61897 Accepted
+[Thu Nov 27 19:17:51 2025] 127.0.0.1:61898 Accepted
+[Thu Nov 27 19:17:51 2025] 127.0.0.1:61897 [200]: GET /assets/app.css
+[Thu Nov 27 19:17:51 2025] 127.0.0.1:61898 [200]: GET /assets/logo_strikezone.png
+[Thu Nov 27 19:17:51 2025] 127.0.0.1:61897 Closing
+[Thu Nov 27 19:17:51 2025] 127.0.0.1:61898 Closing
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63742 Accepted
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63742 Closing
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63745 Accepted
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63745 Closing
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63748 Accepted
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63748 [200]: GET /assets/app.css
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63749 Accepted
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63748 Closing
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63749 [200]: GET /assets/logo_strikezone.png
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63749 Closing
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63750 Accepted
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63750 [200]: GET /uploads/qrcodes/match-4-A.png
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63750 Closing
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63751 Accepted
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63751 [200]: GET /uploads/qrcodes/match-4-B.png
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63751 Closing
+[Thu Nov 27 21:06:33 2025] 127.0.0.1:63753 Accepted
+[Thu Nov 27 21:07:03 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:4', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 21:07:03 2025] 127.0.0.1:63753 [200]: GET /stream_match.php?match_id=4 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 21:07:03 2025] 127.0.0.1:63753 Closing
+[Thu Nov 27 21:07:13 2025] 127.0.0.1:63772 Accepted
+[Thu Nov 27 21:07:43 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:4', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 21:07:43 2025] 127.0.0.1:63772 [200]: GET /stream_match.php?match_id=4 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 21:07:43 2025] 127.0.0.1:63772 Closing
+[Thu Nov 27 21:07:53 2025] 127.0.0.1:63789 Accepted
+[Thu Nov 27 21:08:23 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:4', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 21:08:23 2025] 127.0.0.1:63789 [200]: GET /stream_match.php?match_id=4 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 21:08:23 2025] 127.0.0.1:63789 Closing
+[Thu Nov 27 21:08:33 2025] 127.0.0.1:63805 Accepted
+[Thu Nov 27 21:09:03 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:4', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 21:09:03 2025] 127.0.0.1:63805 [200]: GET /stream_match.php?match_id=4 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 21:09:03 2025] 127.0.0.1:63805 Closing
+[Thu Nov 27 21:09:13 2025] 127.0.0.1:63823 Accepted
+[Thu Nov 27 21:09:43 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:4', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 21:09:43 2025] 127.0.0.1:63823 [200]: GET /stream_match.php?match_id=4 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 21:09:43 2025] 127.0.0.1:63823 Closing
+[Thu Nov 27 21:09:53 2025] 127.0.0.1:63841 Accepted
+[Thu Nov 27 21:10:23 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:4', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 21:10:23 2025] 127.0.0.1:63841 [200]: GET /stream_match.php?match_id=4 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 21:10:23 2025] 127.0.0.1:63841 Closing
+[Thu Nov 27 21:10:33 2025] 127.0.0.1:63857 Accepted
+[Thu Nov 27 21:11:03 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:4', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 21:11:03 2025] 127.0.0.1:63857 [200]: GET /stream_match.php?match_id=4 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 21:11:03 2025] 127.0.0.1:63857 Closing
+[Thu Nov 27 21:11:13 2025] 127.0.0.1:63879 Accepted
+[Thu Nov 27 21:11:44 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:4', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 21:11:44 2025] 127.0.0.1:63879 [200]: GET /stream_match.php?match_id=4 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 21:11:44 2025] 127.0.0.1:63879 Closing
+[Thu Nov 27 21:11:54 2025] 127.0.0.1:63897 Accepted
+[Thu Nov 27 21:12:24 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:4', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 21:12:24 2025] 127.0.0.1:63897 [200]: GET /stream_match.php?match_id=4 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 21:12:24 2025] 127.0.0.1:63897 Closing
+[Thu Nov 27 21:12:34 2025] 127.0.0.1:63913 Accepted
+[Thu Nov 27 21:13:04 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:4', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 21:13:04 2025] 127.0.0.1:63913 [200]: GET /stream_match.php?match_id=4 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 21:13:04 2025] 127.0.0.1:63913 Closing
+[Thu Nov 27 21:13:14 2025] 127.0.0.1:63932 Accepted
+[Thu Nov 27 21:13:44 2025] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+Stack trace:
+#0 /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php(71): stream_select(Array, NULL, NULL, 0, 200000)
+#1 /Users/goncalomurrinha/Strikezone/central-app/public/stream_match.php(48): MiniRedis->subscribeLoop('airsoft:match:4', Object(Closure), Object(Closure))
+#2 {main}
+[Thu Nov 27 21:13:44 2025] 127.0.0.1:63932 [200]: GET /stream_match.php?match_id=4 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Nov 27 21:13:44 2025] 127.0.0.1:63932 Closing
+[Thu Nov 27 21:13:54 2025] 127.0.0.1:63949 Accepted

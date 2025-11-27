@@ -54,7 +54,7 @@ function page_header($title='Owner'){
   echo "<header class='top-nav'>";
   echo "<div class='brand'><img src='/assets/logo_strikezone.png' alt='StrikeZone'><span>StrikeZone Central</span></div>";
   echo "<nav><a href='/owner' class='btn btn-ghost'>Dashboard</a><a href='/owner/maps' class='btn btn-ghost'>Mapas</a><a href='/owner/logout' class='btn btn-ghost'>Sair</a></nav>";
-  echo "</header><main class='dash-main'><h1>$safeTitle</h1>";
+  echo "</header><main class='dash-main'><h1>$safeTitle</h1><div id='page-loading' class='page-overlay' hidden><div class='spinner'></div><p>A carregar…</p></div>";
 }
 function page_footer(){ echo "</main></div></body></html>"; }
 
@@ -426,22 +426,25 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
       }
     };
     const leaveBtn = document.getElementById('leave-match');
+    const overlay = document.getElementById('page-loading');
     if (leaveBtn) {
-      leaveBtn.addEventListener('click', (ev) => {
+      leaveBtn.addEventListener('click', async (ev) => {
         ev.preventDefault();
         stopStream();
+        if (overlay) overlay.hidden = false;
         const data = new URLSearchParams({halt:'1'}).toString();
+        const doPost = () => fetch('/stream_match.php?match_id='+matchId, {
+          method:'POST',
+          headers:{'Content-Type':'application/x-www-form-urlencoded'},
+          body:data
+        });
         try {
+          await doPost();
+        } catch (e) {
           if (navigator.sendBeacon) {
             navigator.sendBeacon('/stream_match.php?match_id='+matchId, data);
-          } else {
-            fetch('/stream_match.php?match_id='+matchId, {
-              method:'POST',
-              headers:{'Content-Type':'application/x-www-form-urlencoded'},
-              body:data
-            }).catch(()=>{});
           }
-        } catch(e) {}
+        }
         window.location.href = backUrl;
       });
     }

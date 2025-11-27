@@ -11,13 +11,23 @@ header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache, no-transform');
 header('Connection: keep-alive');
 header('X-Accel-Buffering: no');
-ignore_user_abort(false);
+ignore_user_abort(true);
 // Cap connection lifetime to avoid tying up workers indefinitely
-@set_time_limit(120);
+@set_time_limit(30);
 
 $mr = new MiniRedis($config['redis']['host'], (int)$config['redis']['port'], (float)$config['redis']['timeout']);
 $chan = ($config['redis']['prefix'] ?? 'airsoft:') . "match:$matchId";
 $stopKey = ($config['redis']['prefix'] ?? 'airsoft:') . "match:$matchId:stopped";
+
+register_shutdown_function(static function () use ($mr, $chan) {
+  try {
+    $mr->publish($chan, json_encode(['ctrl'=>'stop']));
+    if (function_exists('fastcgi_finish_request')) {
+      fastcgi_finish_request();
+    }
+  } catch (\Throwable $e) {
+  }
+});
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['halt'])) {
   $mr->set($stopKey, '1', 5);
