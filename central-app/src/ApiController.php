@@ -198,6 +198,19 @@ final class ApiController {
     $rows = $this->repo->listMatchesByArena($arenaId);
     json_out(['ok'=>true,'matches'=>$rows]);
   }
+  // GET /api/maps?arena_id=... or ?match_id=...
+  public function mapList(): void {
+    $arenaId = (int)($_GET['arena_id'] ?? 0);
+    $matchId = (int)($_GET['match_id'] ?? 0);
+    if ($matchId>0) {
+      $match = $this->repo->getMatchById($matchId);
+      if (!$match){ json_out(['error'=>'match_not_found'],404); return; }
+      $arenaId = (int)$match['arena_id'];
+    }
+    if ($arenaId<=0){ json_out(['error'=>'invalid_arena'],422); return; }
+    $maps = $this->repo->listMapsByArena($arenaId);
+    json_out(['ok'=>true,'arena_id'=>$arenaId,'count'=>count($maps),'maps'=>$maps]);
+  }
 
   // POST /api/match/join {join_code}
   public function matchJoin(): void {
@@ -250,6 +263,27 @@ final class ApiController {
       ];
     }
     json_out(['ok'=>true,'match'=>$match,'members'=>$out]);
+  }
+  // GET /api/match/team-roster?match_id=&side=A
+  public function teamRoster(): void {
+    $matchId = (int)($_GET['match_id'] ?? 0);
+    $side = strtoupper(trim((string)($_GET['side'] ?? '')));
+    if ($matchId<=0 || !in_array($side,['A','B'], true)) {
+      json_out(['error'=>'invalid_input'],422); return;
+    }
+    $match = $this->repo->getMatchById($matchId);
+    if (!$match){ json_out(['error'=>'not_found'],404); return; }
+    $auth = $this->authenticateMatchRequest($match, $side);
+    $members = $this->repo->listMembersByMatch($matchId);
+    $teamPlayers = [];
+    foreach ($members as $mbr) {
+      if ($mbr['side'] !== $side) continue;
+      $teamPlayers[] = [
+        'user_id'=>(int)$mbr['user_id'],
+        'name'=>$mbr['display_name'],
+      ];
+    }
+    json_out(['ok'=>true,'match_id'=>$matchId,'side'=>$side,'players'=>$teamPlayers]);
   }
   // POST /api/match/register-player {match_id,user_id,side}
   public function matchRegisterPlayer(): void {

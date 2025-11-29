@@ -38,8 +38,10 @@ if ($uri==='/api/match/list'   && $method==='GET')  { $api->matchList(); exit; }
 if ($uri==='/api/match/join'   && $method==='POST') { $api->matchJoin(); exit; }
 if ($uri==='/api/match/register-player' && $method==='POST') { $api->matchRegisterPlayer(); exit; }
 if ($uri==='/api/match/roster' && $method==='GET')  { $api->matchRoster(); exit; }
+if ($uri==='/api/match/team-roster' && $method==='GET') { $api->teamRoster(); exit; }
 
 if ($uri==='/api/scan' && $method==='POST') { $api->submitScan(); exit; }
+if ($uri==='/api/maps' && $method==='GET') { $api->mapList(); exit; }
 
 /* ---------- OWNER UI ---------- */
 function page_header($title='Owner'){
@@ -426,12 +428,10 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
       }
     };
     const leaveBtn = document.getElementById('leave-match');
-    const overlay = document.getElementById('page-loading');
     if (leaveBtn) {
       leaveBtn.addEventListener('click', async (ev) => {
         ev.preventDefault();
         stopStream();
-        if (overlay) overlay.hidden = false;
         const data = new URLSearchParams({halt:'1'}).toString();
         const doPost = () => fetch('/stream_match.php?match_id='+matchId, {
           method:'POST',
