@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- New Modern Palette -->
+    <color name="app_background">#1C1C2E</color>
+    <color name="button_background">#8338EC</color>
+    <color name="text_hint">#A9A9C2</color>
+    <color name="surface_color">#2A2A3E</color>
+
+</resources>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/FirstFragment">
+
+    <fragment
+        android:id="@+id/FirstFragment"
+        android:name="com.example.myapplication.FirstFragment"
+        android:label="Validation"
+        tools:layout="@layout/fragment_first">
+
+        <action
+            android:id="@+id/action_FirstFragment_to_PlayerNameFragment"
+            app:destination="@id/PlayerNameFragment" />
+        <action
+            android:id="@+id/action_FirstFragment_to_CoordinatesFragment"
+            app:destination="@id/CoordinatesFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/PlayerNameFragment"
+        android:name="com.example.myapplication.PlayerNameFragment"
+        android:label="Player Name"
+        tools:layout="@layout/fragment_player_name">
+        <argument
+            android:name="team"
+            app:argType="string" />
+        <argument
+            android:name="match_id"
+            app:argType="integer" />
+        <argument
+            android:name="token"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_PlayerNameFragment_to_GameFragment"
+            app:destination="@id/GameFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/GameFragment"
+        android:name="com.example.myapplication.GameFragment"
+        android:label="Game"
+        tools:layout="@layout/fragment_game" >
+        <argument
+            android:name="team"
+            app:argType="string" />
+        <argument
+            android:name="match_id"
+            app:argType="integer" />
+        <argument
+            android:name="token"
+            app:argType="string" />
+        <argument
+            android:name="player_id"
+            app:argType="integer" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/CoordinatesFragment"
+        android:name="com.example.myapplication.CoordinatesFragment"
+        android:label="Coordinates"
+        tools:layout="@layout/fragment_coordinates" />
+
+</navigation>
