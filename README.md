@@ -84,8 +84,10 @@ redis-server
 ### 5️⃣ Arrancar o servidor PHP (dev)
 
 ```bash
-php -S 0.0.0.0:8080 -t public
+php -S 0.0.0.0:8080 -t public -c php.dev.ini
 ```
+
+> `php.dev.ini` já aumenta `upload_max_filesize`/`post_max_size` para 64 MB. Ajusta esse ficheiro se precisares de mapas maiores.
 
 Abrir: http://localhost:8080
 
@@ -115,6 +117,7 @@ macOS não traz PHP/Composer nem Redis por defeito, por isso o fluxo recomendado
    QR_OUTPUT_DIR=/Users/<tu_user>/Strikezone/central-app/public/uploads/qrcodes
    QR_BASE_URL=/uploads/qrcodes
    QR_SIZE=220
+   UPLOAD_MAX_MB=50
    ```
 4. **Arrancar serviços**
    - MySQL (Homebrew): `brew services start mysql`
@@ -126,7 +129,7 @@ macOS não traz PHP/Composer nem Redis por defeito, por isso o fluxo recomendado
    ```
 6. **Servidor PHP**
    ```bash
-   php -S 0.0.0.0:8080 -t public
+   php -S 0.0.0.0:8080 -t public -c php.dev.ini
    ```
 
 Com estes passos tens o stack completo a correr localmente no macOS (Monterey+ ou Apple Silicon). Caso prefiras Docker, podes criar um `docker-compose` com `mysql` e `redis` e apontar o `.env` para os containers.
@@ -165,5 +168,5 @@ Sugestão opcional (DB): adicionar índice em `beacons(arena_id)` para acelerar 
 - Endpoints e UI: `central-app/public/index.php` (roteamento simples em PHP embutido).
 - Quando crias um jogo no painel de dono és questionado se preferes distribuir os códigos em texto ou por QR code. Essa escolha fica guardada em `matches.code_display_mode` — se já tinhas a base criada antes desta atualização corre `ALTER TABLE matches ADD COLUMN code_display_mode ENUM('text','qr') NOT NULL DEFAULT 'text';`.
 - Os QR codes são gerados uma única vez com a biblioteca [endroid/qr-code](https://github.com/endroid/qr-code) e guardados em `public/uploads/qrcodes/` como ficheiros PNG. Podes customizar a localização via `.env` (`QR_OUTPUT_DIR`, `QR_BASE_URL`, `QR_SIZE`). Depois disto o dashboard lê diretamente os ficheiros locais, evitando chamadas lentas ao serviço externo.
-- A app pode buscar os mapas via `GET /api/maps?arena_id=123` (ou `?match_id=456`) — o endpoint devolve todos os registos de `maps` para a arena identificada.
+- A app pode buscar os mapas via `GET /api/maps?arena_id=123` (ou `?match_id=456`) — o endpoint devolve todos os registos de `maps` para a arena identificada (certifica-te de que `APP_URL` no `.env` aponta para o host público para que os `map_url` venham absolutos e clicáveis no mobile).
 - Para listar jogadores por equipa usa `GET /api/match/team-roster?match_id=123&side=A` com o token do match (ou token de owner). A resposta traz o array de nomes/IDs para aquele lado.

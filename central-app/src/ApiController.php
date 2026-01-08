@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 final class ApiController {
+  private bool $warnedMissingBaseUrl = false;
   public function __construct(
     private Repository $repo,
     private FloorEngine $fe,
@@ -9,6 +10,21 @@ final class ApiController {
     private ?QrManager $qr,
     private array $cfg
   ) {}
+  private function absoluteUrl(?string $url): string {
+    $url = trim((string)$url);
+    if ($url === '') return '';
+    if (preg_match('~^https?://~i', $url)) return $url;
+    $base = rtrim((string)($this->cfg['public_base_url'] ?? ''), '/');
+    if ($base === '') {
+      if (!$this->warnedMissingBaseUrl) {
+        error_log('[api] public_base_url not configured; returning relative map_url');
+        $this->warnedMissingBaseUrl = true;
+      }
+    } else {
+      return $base . '/' . ltrim($url, '/');
+    }
+    return $url;
+  }
   private function ownerOwnsArena(int $ownerId, int $arenaId): bool {
     foreach ($this->repo->listArenasByOwner($ownerId) as $arena) {
       if ((int)$arena['id'] === $arenaId) {
@@ -208,7 +224,12 @@ final class ApiController {
       $arenaId = (int)$match['arena_id'];
     }
     if ($arenaId<=0){ json_out(['error'=>'invalid_arena'],422); return; }
-    $maps = $this->repo->listMapsByArena($arenaId);
+    $mapsRaw = $this->repo->listMapsByArena($arenaId);
+    $maps = [];
+    foreach ($mapsRaw as $row) {
+      $row['map_url'] = $this->absoluteUrl($row['map_url'] ?? '');
+      $maps[] = $row;
+    }
     json_out(['ok'=>true,'arena_id'=>$arenaId,'count'=>count($maps),'maps'=>$maps]);
   }
 
@@ -254,11 +275,12 @@ final class ApiController {
       $teamId = $matchId*10 + ($side==='A'?1:2);
       $playerId = $this->repo->ensurePlayer((int)$mbr['user_id'],$teamId);
       $st = $this->repo->getPlayerState($playerId);
+      $floor = $st['last_floor']!==null ? (int)$st['last_floor'] : 0;
       $out[] = [
         'user_id'=>(int)$mbr['user_id'],
         'name'=>$mbr['display_name'],
         'side'=>$side,
-        'floor'=>$st['last_floor']!==null ? (int)$st['last_floor'] : null,
+        'floor'=>$floor,
         'last_change_at'=>$st['last_change_at']
       ];
     }

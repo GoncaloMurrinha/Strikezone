@@ -233,6 +233,13 @@ form input:focus, form select:focus {
   padding:1rem;
   text-align:center;
 }
+.qr-card .team-label {
+  display:block;
+  font-weight:600;
+  margin-bottom:0.6rem;
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+}
 .qr-card img {
   max-width:100%;
   border-radius:12px;

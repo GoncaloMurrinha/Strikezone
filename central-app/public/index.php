@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../src/db.php';
@@ -367,9 +367,11 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
     if ($qrAUrl && $qrBUrl) {
       $qrA = htmlspecialchars($qrAUrl);
       $qrB = htmlspecialchars($qrBUrl);
+      $teamALabel = htmlspecialchars($match['team_a_name']);
+      $teamBLabel = htmlspecialchars($match['team_b_name']);
       echo "<div class='qr-grid'>";
-      echo "<div class='qr-card'><strong>Equipa A</strong><img src='$qrA' alt='QR Equipa A'><span class='muted'>Código: <code>$teamACode</code></span></div>";
-      echo "<div class='qr-card'><strong>Equipa B</strong><img src='$qrB' alt='QR Equipa B'><span class='muted'>Código: <code>$teamBCode</code></span></div>";
+      echo "<div class='qr-card'><div class='team-label'>$teamALabel</div><img src='$qrA' alt='QR Equipa A'><span class='muted'>Código: <code>$teamACode</code></span></div>";
+      echo "<div class='qr-card'><div class='team-label'>$teamBLabel</div><img src='$qrB' alt='QR Equipa B'><span class='muted'>Código: <code>$teamBCode</code></span></div>";
       echo "</div>";
     } else {
       echo "<p class='muted'>Códigos — A=<code>$teamACode</code> | B=<code>$teamBCode</code></p>";
@@ -429,23 +431,23 @@ if (preg_match('#^/owner/match/(\d+)$#', $uri, $m)) {
     };
     const leaveBtn = document.getElementById('leave-match');
     if (leaveBtn) {
-      leaveBtn.addEventListener('click', async (ev) => {
+      leaveBtn.addEventListener('click', (ev) => {
         ev.preventDefault();
         stopStream();
         const data = new URLSearchParams({halt:'1'}).toString();
-        const doPost = () => fetch('/stream_match.php?match_id='+matchId, {
-          method:'POST',
-          headers:{'Content-Type':'application/x-www-form-urlencoded'},
-          body:data
-        });
-        try {
-          await doPost();
-        } catch (e) {
-          if (navigator.sendBeacon) {
-            navigator.sendBeacon('/stream_match.php?match_id='+matchId, data);
-          }
+        const url = '/stream_match.php?match_id='+matchId;
+        const fallbackFetch = () => {
+          fetch(url, {
+            method:'POST',
+            headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:data,
+            keepalive:true
+          }).catch(()=>{});
+        };
+        if (!(navigator.sendBeacon && navigator.sendBeacon(url, new Blob([data], {type:'application/x-www-form-urlencoded'})))) {
+          fallbackFetch();
         }
-        window.location.href = backUrl;
+        setTimeout(()=>{ window.location.href = backUrl; }, 10);
       });
     }
     window.addEventListener('beforeunload', stopStream);
@@ -460,31 +462,112 @@ if ($uri==='/owner/maps') {
   $cfgUp = $config['uploads'];
   if (!is_dir($cfgUp['maps_dir'])) @mkdir($cfgUp['maps_dir'], 0775, true);
 
+  $parseSizeToBytes = static function (?string $val): int {
+    if ($val === null) return 0;
+    $v = trim($val);
+    if ($v === '') return 0;
+    $unit = strtolower(substr($v, -1));
+    $num = (float)$v;
+    switch ($unit) {
+      case 'g': return (int)round($num * 1024 * 1024 * 1024);
+      case 'm': return (int)round($num * 1024 * 1024);
+      case 'k': return (int)round($num * 1024);
+      default: return (int)round($num);
+    }
+  };
+  $phpUploadBytes = $parseSizeToBytes(ini_get('upload_max_filesize') ?: null);
+  $phpPostBytes = $parseSizeToBytes(ini_get('post_max_size') ?: null);
+  $effectivePhpBytes = 0;
+  if ($phpUploadBytes>0 && $phpPostBytes>0) {
+    $effectivePhpBytes = min($phpUploadBytes, $phpPostBytes);
+  } elseif ($phpUploadBytes>0) {
+    $effectivePhpBytes = $phpUploadBytes;
+  } elseif ($phpPostBytes>0) {
+    $effectivePhpBytes = $phpPostBytes;
+  }
+  $effectivePhpMb = $effectivePhpBytes>0 ? round($effectivePhpBytes/1048576,1) : null;
+  $cfgLimitMb = max(1, (int)$cfgUp['max_mb']);
+
+  $flash = $_SESSION['owner_maps_flash'] ?? null;
+  unset($_SESSION['owner_maps_flash']);
+
+  $uploadErrorMessage = static function (int $code): string {
+    return match ($code) {
+      UPLOAD_ERR_INI_SIZE => 'O ficheiro excede o limite configurado no servidor.',
+      UPLOAD_ERR_FORM_SIZE => 'O ficheiro excede o limite definido no formulário.',
+      UPLOAD_ERR_PARTIAL => 'O upload ficou incompleto.',
+      UPLOAD_ERR_NO_FILE => 'Nenhum ficheiro foi enviado.',
+      UPLOAD_ERR_NO_TMP_DIR => 'Falta o diretório temporário.',
+      UPLOAD_ERR_CANT_WRITE => 'Falha ao escrever no disco.',
+      UPLOAD_ERR_EXTENSION => 'Uma extensão bloqueou o envio.',
+      default => 'Erro desconhecido (código '.$code.').'
+    };
+  };
+
   if ($method==='POST' && isset($_POST['upload_map'])) {
     $arenaId = (int)($_POST['arena_id'] ?? 0);
     $floor   = (int)($_POST['floor'] ?? 0);
-    if ($arenaId>0 && !empty($_FILES['mapfile']['name'])) {
-      $f = $_FILES['mapfile'];
-      if ($f['error'] === UPLOAD_ERR_OK) {
-        $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, ['png','jpg','jpeg','webp','svg'])) die('extensão inválida');
-        if ($f['size'] > $cfgUp['max_mb']*1024*1024) die('ficheiro grande demais');
-        $name = 'map_a'.$arenaId.'_floor_'.$floor.'_'.time().'.'.$ext;
-        $dest = rtrim($cfgUp['maps_dir'],'/\\').DIRECTORY_SEPARATOR.$name;
-        move_uploaded_file($f['tmp_name'], $dest);
-        $url  = rtrim($cfgUp['maps_url'],'/').'/'.$name;
-        $thisArena = null;
-        foreach ($repo->listArenasByOwner($ownerId) as $a) if ((int)$a['id']===$arenaId) $thisArena=$a;
-        if (!$thisArena) die('forbidden arena');
-        $repo->upsertMap($arenaId, $floor, 'Piso '.$floor, $url);
-        header('Location: /owner/maps'); exit;
+    try {
+      if ($arenaId<=0) {
+        throw new RuntimeException('Campo inválido.');
       }
+      if (empty($_FILES['mapfile']['name'])) {
+        throw new RuntimeException('Escolhe um ficheiro antes de enviar.');
+      }
+      $f = $_FILES['mapfile'];
+      if ($f['error'] !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Falha no upload: '.$uploadErrorMessage((int)$f['error']));
+      }
+      $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
+      if (!in_array($ext, ['png','jpg','jpeg','webp','svg'], true)) {
+        throw new RuntimeException('Extensão inválida (aceite: png/jpg/jpeg/webp/svg).');
+      }
+      if ($f['size'] > $cfgUp['max_mb']*1024*1024) {
+        throw new RuntimeException('Ficheiro grande demais (limite '.$cfgUp['max_mb'].'MB).');
+      }
+      $name = 'map_a'.$arenaId.'_floor_'.$floor.'_'.time().'.'.$ext;
+      $dest = rtrim($cfgUp['maps_dir'],'/\\').DIRECTORY_SEPARATOR.$name;
+      if (!@move_uploaded_file($f['tmp_name'], $dest)) {
+        throw new RuntimeException('Não foi possível gravar o ficheiro (ver permissões de escrita em uploads/maps).');
+      }
+      $url  = rtrim($cfgUp['maps_url'],'/').'/'.$name;
+      $thisArena = null;
+      foreach ($repo->listArenasByOwner($ownerId) as $a) {
+        if ((int)$a['id']===$arenaId) { $thisArena=$a; break; }
+      }
+      if (!$thisArena) {
+        throw new RuntimeException('Não tens acesso a esse campo.');
+      }
+      $repo->upsertMap($arenaId, $floor, 'Piso '.$floor, $url);
+      error_log(sprintf('[owner/maps] owner=%d arena=%d floor=%d map stored as %s', $ownerId, $arenaId, $floor, $name));
+      $_SESSION['owner_maps_flash'] = ['type'=>'success','msg'=>'Mapa carregado com sucesso.'];
+    } catch (Throwable $ex) {
+      $msg = $ex->getMessage();
+      error_log(sprintf('[owner/maps] owner=%d arena=%d floor=%d upload failed: %s', $ownerId, $arenaId, $floor, $msg));
+      $_SESSION['owner_maps_flash'] = ['type'=>'error','msg'=>$msg];
     }
+    header('Location: /owner/maps'); exit;
   }
 
   $arenas = $repo->listArenasByOwner($ownerId);
   page_header("Mapas do Campo");
   echo "<section class='card'><h2>Carregar mapa por piso</h2>";
+  if ($flash) {
+    $cls = $flash['type']==='success' ? "alert success" : "alert";
+    $msg = htmlspecialchars($flash['msg'], ENT_QUOTES, 'UTF-8');
+    echo "<div class='$cls'>$msg</div>";
+  }
+  if ($effectivePhpMb !== null) {
+    $info = "Limite real do PHP para uploads: {$effectivePhpMb}MB (upload_max_filesize/post_max_size).";
+    if ($effectivePhpMb < $cfgLimitMb) {
+      $info .= " Está abaixo dos {$cfgLimitMb}MB definidos na app — aumenta os valores em php.dev.ini e arranca o servidor com `php -S 0.0.0.0:8080 -t public -c php.dev.ini`.";
+      echo "<div class='alert'>$info</div>";
+    } else {
+      echo "<div class='alert info'>$info</div>";
+    }
+  } else {
+    echo "<div class='alert info'>Não foi possível determinar o limite de upload do PHP; se precisares de mais que {$cfgLimitMb}MB ajusta php.dev.ini.</div>";
+  }
   if (!$arenas) echo "<p class='muted'>(cria primeiro um Campo)</p>";
   echo "<form method='post' enctype='multipart/form-data' class='upload-zone' style='max-width:600px'>
     <input type='hidden' name='upload_map' value='1'>

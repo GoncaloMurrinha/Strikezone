@@ -24,9 +24,17 @@ $env = static function (string $key, $default = null) {
 
 $redisPrefix = (string)$env('REDIS_PREFIX', 'airsoft');
 $redisPrefix = rtrim($redisPrefix, ':') . ':';
+$appUrl = rtrim((string)$env('APP_URL', 'http://localhost:8080'), '/');
 
 $dbSocket = $env('DB_SOCKET');
-$hasSocket = is_string($dbSocket) && $dbSocket !== '';
+$hasSocket = false;
+if (is_string($dbSocket) && $dbSocket !== '') {
+    if (file_exists($dbSocket)) {
+        $hasSocket = true;
+    } else {
+        error_log(sprintf('[config] DB socket "%s" not found, falling back to host/port', $dbSocket));
+    }
+}
 
 $dsn = $hasSocket
     ? sprintf(
@@ -42,6 +50,7 @@ $dsn = $hasSocket
     );
 
 return [
+  'public_base_url' => $appUrl,
   'db' => [
     'dsn' => $dsn,
     'user' => (string)$env('DB_USERNAME', 'root'),
@@ -67,7 +76,7 @@ return [
   'uploads' => [
     'maps_dir' => (string)$env('UPLOADS_MAPS_DIR', __DIR__ . '/../public/uploads/maps'),
     'maps_url' => (string)$env('UPLOADS_MAPS_URL', '/uploads/maps'),
-    'max_mb'   => (int)$env('UPLOAD_MAX_MB', 15),
+    'max_mb'   => (int)$env('UPLOAD_MAX_MB', 50),
   ],
   'qr' => [
     'dir' => (string)$env('QR_OUTPUT_DIR', __DIR__ . '/../public/uploads/qrcodes'),
