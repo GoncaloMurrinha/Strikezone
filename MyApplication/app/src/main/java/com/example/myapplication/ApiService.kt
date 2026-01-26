@@ -40,10 +40,20 @@ data class ScanRequest(
 data class ScanResponse(val status: String)
 
 // Step 4: Response for maps
+data class BeaconInfo(
+    val uuid: String,
+    val x: Double,
+    val y: Double
+)
+
 data class MapInfo(
     val floor: Int,
-    @SerializedName("map_url") val mapUrl: String
+    @SerializedName("map_url") val mapUrl: String,
+    val width: Double?,
+    val height: Double?,
+    val beacons: List<BeaconInfo>?
 )
+
 data class MapsResponse(
     val ok: Boolean,
     val maps: List<MapInfo>

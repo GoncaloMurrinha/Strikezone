@@ -260,6 +260,11 @@ form input:focus, form select:focus {
   border-radius:12px;
   margin-bottom:1rem;
 }
+.alert.success {
+  background:rgba(72,200,155,0.2);
+  border-color:rgba(72,200,155,0.4);
+  color:#b9f5dc;
+}
 
 .live-grid {
   display:grid;
@@ -293,6 +298,48 @@ form input:focus, form select:focus {
 .upload-zone input[type='file'] {
   padding:0.5rem;
   background:rgba(255,255,255,0.04);
+}
+
+.map-picker {
+  display:flex;
+  flex-direction:column;
+  gap:1rem;
+}
+.map-picker-toolbar {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:1rem;
+}
+.map-picker-canvas {
+  position:relative;
+  width:100%;
+  max-width:900px;
+  border-radius:16px;
+  border:1px solid var(--stroke);
+  background:rgba(10,12,32,0.8);
+  overflow:hidden;
+}
+.map-picker-canvas img {
+  display:block;
+  width:100%;
+  height:auto;
+  object-fit:contain;
+}
+.map-picker-canvas img[src=''] {
+  min-height:220px;
+}
+#map-picker-marker {
+  position:absolute;
+  width:16px;
+  height:16px;
+  margin:-8px 0 0 -8px;
+  border-radius:50%;
+  background:var(--accent);
+  border:2px solid #fff;
+  box-shadow:0 0 0 6px rgba(246,75,155,0.25);
+  display:none;
+  pointer-events:none;
 }
 
 @media (max-width:640px) {

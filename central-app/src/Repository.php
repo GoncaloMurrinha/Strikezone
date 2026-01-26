@@ -39,12 +39,16 @@ final class Repository {
   }
 
   // ----- MAPS -----
-  public function upsertMap(int $arenaId, int $floor, string $name, string $url): void {
+  public function upsertMap(int $arenaId, int $floor, string $name, string $url, ?float $width, ?float $height): void {
     $st = $this->pdo->prepare('
-      INSERT INTO maps (arena_id,floor,name,map_url) VALUES (?,?,?,?)
-      ON DUPLICATE KEY UPDATE name=VALUES(name), map_url=VALUES(map_url)
+      INSERT INTO maps (arena_id,floor,name,map_url,width,height) VALUES (?,?,?,?,?,?)
+      ON DUPLICATE KEY UPDATE name=VALUES(name), map_url=VALUES(map_url), width=VALUES(width), height=VALUES(height)
     ');
-    $st->execute([$arenaId,$floor,$name,$url]);
+    $st->execute([$arenaId,$floor,$name,$url,$width,$height]);
+  }
+  public function updateMapDimensions(int $arenaId, int $floor, ?float $width, ?float $height): void {
+    $st = $this->pdo->prepare('UPDATE maps SET width=?, height=? WHERE arena_id=? AND floor=?');
+    $st->execute([$width,$height,$arenaId,$floor]);
   }
   public function listMapsByArena(int $arenaId): array {
     $st = $this->pdo->prepare('SELECT * FROM maps WHERE arena_id=? ORDER BY floor ASC');
@@ -52,12 +56,22 @@ final class Repository {
   }
 
   // ----- BEACONS -----
-  public function upsertBeacon(int $arenaId, string $uuid, int $major, int $minor, int $floor, int $txPower, ?string $label): void {
+  public function upsertBeacon(
+    int $arenaId,
+    string $uuid,
+    int $major,
+    int $minor,
+    int $floor,
+    int $txPower,
+    ?string $label,
+    ?float $x,
+    ?float $y
+  ): void {
     $st = $this->pdo->prepare('
-      INSERT INTO beacons (arena_id,uuid,major,minor,floor,tx_power,label) VALUES (?,?,?,?,?,?,?)
-      ON DUPLICATE KEY UPDATE floor=VALUES(floor), tx_power=VALUES(tx_power), label=VALUES(label)
+      INSERT INTO beacons (arena_id,uuid,major,minor,floor,tx_power,label,x,y) VALUES (?,?,?,?,?,?,?,?,?)
+      ON DUPLICATE KEY UPDATE floor=VALUES(floor), tx_power=VALUES(tx_power), label=VALUES(label), x=VALUES(x), y=VALUES(y)
     ');
-    $st->execute([$arenaId,$uuid,$major,$minor,$floor,$txPower,$label]);
+    $st->execute([$arenaId,$uuid,$major,$minor,$floor,$txPower,$label,$x,$y]);
   }
   public function findBeaconsByArena(int $arenaId): array {
     $st = $this->pdo->prepare('SELECT * FROM beacons WHERE arena_id=?');

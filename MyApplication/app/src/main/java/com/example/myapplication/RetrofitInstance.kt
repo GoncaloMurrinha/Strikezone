@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitInstance {
     
-    // Guardamos o URL detetado para não ter de processar a rede sempre
     private var cachedBaseUrl: String? = null
 
     private fun getLocalIpAddress(): String? {
@@ -34,15 +33,16 @@ object RetrofitInstance {
     }
 
     private fun getDynamicBaseUrl(): String {
-        // Se já temos o URL guardado, devolvemos logo (muito mais rápido)
         cachedBaseUrl?.let { return it }
 
         val localIp = getLocalIpAddress() ?: ""
         Log.d("RetrofitInstance", "IP do Telemóvel detetado pela primeira vez: $localIp")
 
+        // Prioridade para o IP do servidor local conhecido se estivermos na mesma rede
         val url = when {
             localIp.startsWith("10.0.2") -> "http://10.0.2.2:8080/"
             localIp.startsWith("172.20.10") -> "http://172.20.10.3:8080/"
+            localIp.startsWith("192.168.100") -> "http://192.168.100.165:8080/"
             else -> "http://192.168.100.165:8080/"
         }
         
@@ -55,13 +55,14 @@ object RetrofitInstance {
     val api: ApiService by lazy {
         val logger = HttpLoggingInterceptor.Logger { message -> Log.i("OkHttp", message) }
         val logging = HttpLoggingInterceptor(logger).apply {
-            setLevel(HttpLoggingInterceptor.Level.HEADERS) // Reduzido log para evitar lentidão
+            setLevel(HttpLoggingInterceptor.Level.BODY)
         }
 
         val client = OkHttpClient.Builder()
             .addInterceptor(logging)
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
+            .connectTimeout(30, TimeUnit.SECONDS) // Aumentado timeout
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .build()
 
         Retrofit.Builder()

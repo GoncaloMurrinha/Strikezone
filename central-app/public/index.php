@@ -55,7 +55,7 @@ function page_header($title='Owner'){
   echo "</head><body class='dash-body'><div class='dashboard-shell'>";
   echo "<header class='top-nav'>";
   echo "<div class='brand'><img src='/assets/logo_strikezone.png' alt='StrikeZone'><span>StrikeZone Central</span></div>";
-  echo "<nav><a href='/owner' class='btn btn-ghost'>Dashboard</a><a href='/owner/maps' class='btn btn-ghost'>Mapas</a><a href='/owner/logout' class='btn btn-ghost'>Sair</a></nav>";
+  echo "<nav><a href='/owner' class='btn btn-ghost'>Dashboard</a><a href='/owner/maps' class='btn btn-ghost'>Mapas</a><a href='/owner/beacons' class='btn btn-ghost'>Beacons</a><a href='/owner/logout' class='btn btn-ghost'>Sair</a></nav>";
   echo "</header><main class='dash-main'><h1>$safeTitle</h1><div id='page-loading' class='page-overlay' hidden><div class='spinner'></div><p>A carregar…</p></div>";
 }
 function page_footer(){ echo "</main></div></body></html>"; }
@@ -503,13 +503,27 @@ if ($uri==='/owner/maps') {
       default => 'Erro desconhecido (código '.$code.').'
     };
   };
+  $parseOptionalFloat = static function (?string $val): ?float {
+    if ($val === null) return null;
+    $v = trim($val);
+    if ($v === '') return null;
+    return (float)$v;
+  };
 
   if ($method==='POST' && isset($_POST['upload_map'])) {
     $arenaId = (int)($_POST['arena_id'] ?? 0);
     $floor   = (int)($_POST['floor'] ?? 0);
+    $width = $parseOptionalFloat($_POST['width'] ?? null);
+    $height = $parseOptionalFloat($_POST['height'] ?? null);
     try {
       if ($arenaId<=0) {
         throw new RuntimeException('Campo inválido.');
+      }
+      if ($width !== null && $width <= 0) {
+        throw new RuntimeException('Largura inválida.');
+      }
+      if ($height !== null && $height <= 0) {
+        throw new RuntimeException('Altura inválida.');
       }
       if (empty($_FILES['mapfile']['name'])) {
         throw new RuntimeException('Escolhe um ficheiro antes de enviar.');
@@ -538,12 +552,45 @@ if ($uri==='/owner/maps') {
       if (!$thisArena) {
         throw new RuntimeException('Não tens acesso a esse campo.');
       }
-      $repo->upsertMap($arenaId, $floor, 'Piso '.$floor, $url);
+      $repo->upsertMap($arenaId, $floor, 'Piso '.$floor, $url, $width, $height);
       error_log(sprintf('[owner/maps] owner=%d arena=%d floor=%d map stored as %s', $ownerId, $arenaId, $floor, $name));
       $_SESSION['owner_maps_flash'] = ['type'=>'success','msg'=>'Mapa carregado com sucesso.'];
     } catch (Throwable $ex) {
       $msg = $ex->getMessage();
       error_log(sprintf('[owner/maps] owner=%d arena=%d floor=%d upload failed: %s', $ownerId, $arenaId, $floor, $msg));
+      $_SESSION['owner_maps_flash'] = ['type'=>'error','msg'=>$msg];
+    }
+    header('Location: /owner/maps'); exit;
+  }
+  if ($method==='POST' && isset($_POST['update_map_dimensions'])) {
+    $arenaId = (int)($_POST['arena_id'] ?? 0);
+    $floor   = (int)($_POST['floor'] ?? 0);
+    $width = $parseOptionalFloat($_POST['width'] ?? null);
+    $height = $parseOptionalFloat($_POST['height'] ?? null);
+    try {
+      if ($arenaId<=0) {
+        throw new RuntimeException('Campo inválido.');
+      }
+      if ($floor < 0) {
+        throw new RuntimeException('Piso inválido.');
+      }
+      if ($width !== null && $width <= 0) {
+        throw new RuntimeException('Largura inválida.');
+      }
+      if ($height !== null && $height <= 0) {
+        throw new RuntimeException('Altura inválida.');
+      }
+      $thisArena = null;
+      foreach ($repo->listArenasByOwner($ownerId) as $a) {
+        if ((int)$a['id']===$arenaId) { $thisArena=$a; break; }
+      }
+      if (!$thisArena) {
+        throw new RuntimeException('Não tens acesso a esse campo.');
+      }
+      $repo->updateMapDimensions($arenaId, $floor, $width, $height);
+      $_SESSION['owner_maps_flash'] = ['type'=>'success','msg'=>'Dimensões atualizadas.'];
+    } catch (Throwable $ex) {
+      $msg = $ex->getMessage();
       $_SESSION['owner_maps_flash'] = ['type'=>'error','msg'=>$msg];
     }
     header('Location: /owner/maps'); exit;
@@ -577,11 +624,250 @@ if ($uri==='/owner/maps') {
   }
   echo "</select></div>
     <div class='form-group'><label for='floor'>Piso</label><input id='floor' type='number' name='floor' required></div>
+    <div class='form-group'><label for='width'>Largura (metros)</label><input id='width' type='number' step='0.01' name='width' placeholder='Opcional'></div>
+    <div class='form-group'><label for='height'>Altura (metros)</label><input id='height' type='number' step='0.01' name='height' placeholder='Opcional'></div>
     <div class='form-group'><label for='mapfile'>Ficheiro (png/jpg/webp/svg, max ".(int)$config['uploads']['max_mb']."MB)</label><input id='mapfile' type='file' name='mapfile' required></div>
     <button type='submit' class='btn'>Enviar mapa</button>
   </form></section>";
 
-  echo "<section class='card' style='margin-top:1.5rem;'><p class='muted'>Carrega mapas por piso para cada arena. Depois de enviados, ficam acessíveis na página do respetivo campo.</p></section>";
+  $allMaps = [];
+  foreach ($arenas as $a) {
+    $arenaMaps = $repo->listMapsByArena((int)$a['id']);
+    if ($arenaMaps) {
+      $allMaps[(int)$a['id']] = ['name'=>$a['name'],'maps'=>$arenaMaps];
+    }
+  }
+  if ($allMaps) {
+    echo "<section class='card' style='margin-top:1.5rem;'><h2>Dimensões atuais</h2>";
+    foreach ($allMaps as $aid => $bundle) {
+      $aName = htmlspecialchars($bundle['name']);
+      echo "<h3>$aName</h3>";
+      echo "<table class='table'><thead><tr><th>Piso</th><th>Largura</th><th>Altura</th><th>Mapa</th></tr></thead><tbody>";
+      foreach ($bundle['maps'] as $mp) {
+        $floor = (int)$mp['floor'];
+        $widthVal = $mp['width'] !== null ? htmlspecialchars((string)$mp['width']) : '—';
+        $heightVal = $mp['height'] !== null ? htmlspecialchars((string)$mp['height']) : '—';
+        $url = htmlspecialchars($mp['map_url']);
+        echo "<tr><td>$floor</td><td>$widthVal</td><td>$heightVal</td><td><a href='$url' target='_blank'>ver</a></td></tr>";
+      }
+      echo "</tbody></table>";
+    }
+    echo "</section>";
+  }
+
+  echo "<section class='card' style='margin-top:1.5rem;'><h2>Atualizar dimensões</h2>";
+  if (!$arenas) echo "<p class='muted'>(cria primeiro um Campo)</p>";
+  echo "<form method='post' style='max-width:600px'>
+    <input type='hidden' name='update_map_dimensions' value='1'>
+    <div class='form-group'><label for='arena_id_dim'>Campo</label><select id='arena_id_dim' name='arena_id' required>";
+  foreach ($arenas as $a) {
+    echo "<option value='{$a['id']}'>".htmlspecialchars($a['name'])."</option>";
+  }
+  echo "</select></div>
+    <div class='form-group'><label for='floor_dim'>Piso</label><input id='floor_dim' type='number' name='floor' required></div>
+    <div class='form-group'><label for='width_dim'>Largura (metros)</label><input id='width_dim' type='number' step='0.01' name='width' placeholder='Opcional'></div>
+    <div class='form-group'><label for='height_dim'>Altura (metros)</label><input id='height_dim' type='number' step='0.01' name='height' placeholder='Opcional'></div>
+    <button type='submit' class='btn'>Guardar dimensões</button>
+  </form></section>";
+
+  echo "<section class='card' style='margin-top:1.5rem;'><p class='muted'>Carrega mapas por piso para cada arena e define as dimensões para posicionamento preciso dos beacons.</p></section>";
+  page_footer(); exit;
+}
+
+if ($uri==='/owner/beacons') {
+  $ownerId = $auth->requireOwner();
+  $flash = $_SESSION['owner_beacons_flash'] ?? null;
+  unset($_SESSION['owner_beacons_flash']);
+
+  $parseOptionalFloat = static function (?string $val): ?float {
+    if ($val === null) return null;
+    $v = trim($val);
+    if ($v === '') return null;
+    return (float)$v;
+  };
+
+  if ($method==='POST' && isset($_POST['upsert_beacon'])) {
+    $arenaId = (int)($_POST['arena_id'] ?? 0);
+    $floor = (int)($_POST['floor'] ?? 0);
+    $uuid = strtolower(trim((string)($_POST['uuid'] ?? '')));
+    $major = 0;
+    $minor = 0;
+    $txPower = -59;
+    $label = trim((string)($_POST['label'] ?? ''));
+    $label = $label === '' ? null : $label;
+    $x = $parseOptionalFloat($_POST['x'] ?? null);
+    $y = $parseOptionalFloat($_POST['y'] ?? null);
+
+    try {
+      if ($arenaId<=0) {
+        throw new RuntimeException('Campo inválido.');
+      }
+      if ($floor < 0) {
+        throw new RuntimeException('Piso inválido.');
+      }
+      if ($uuid === '') {
+        throw new RuntimeException('UUID inválido.');
+      }
+      if ($x === null || $y === null) {
+        throw new RuntimeException('Define as coordenadas X e Y.');
+      }
+      $thisArena = null;
+      foreach ($repo->listArenasByOwner($ownerId) as $a) {
+        if ((int)$a['id']===$arenaId) { $thisArena=$a; break; }
+      }
+      if (!$thisArena) {
+        throw new RuntimeException('Não tens acesso a esse campo.');
+      }
+      $repo->upsertBeacon($arenaId, $uuid, $major, $minor, $floor, $txPower, $label, $x, $y);
+      $_SESSION['owner_beacons_flash'] = ['type'=>'success','msg'=>'Beacon guardado.'];
+    } catch (Throwable $ex) {
+      $_SESSION['owner_beacons_flash'] = ['type'=>'error','msg'=>$ex->getMessage()];
+    }
+    header('Location: /owner/beacons'); exit;
+  }
+
+  $arenas = $repo->listArenasByOwner($ownerId);
+  $mapsByArena = [];
+  $beaconsByArena = [];
+  foreach ($arenas as $a) {
+    $mapRows = $repo->listMapsByArena((int)$a['id']);
+    if ($mapRows) {
+      $mapsByArena[(int)$a['id']] = $mapRows;
+    }
+    $rows = $repo->findBeaconsByArena((int)$a['id']);
+    if ($rows) {
+      $beaconsByArena[(int)$a['id']] = ['name'=>$a['name'],'rows'=>$rows];
+    }
+  }
+
+  page_header("Beacons");
+  echo "<section class='card'><h2>Adicionar / Atualizar beacon</h2>";
+  if ($flash) {
+    $cls = $flash['type']==='success' ? "alert success" : "alert";
+    $msg = htmlspecialchars($flash['msg'], ENT_QUOTES, 'UTF-8');
+    echo "<div class='$cls'>$msg</div>";
+  }
+  if (!$arenas) echo "<p class='muted'>(cria primeiro um Campo)</p>";
+  $mapsJson = htmlspecialchars(json_encode($mapsByArena, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
+  echo "<form method='post' style='max-width:680px' data-maps='$mapsJson'>
+    <input type='hidden' name='upsert_beacon' value='1'>
+    <div class='form-group'><label for='arena_id_beacon'>Campo</label><select id='arena_id_beacon' name='arena_id' required>";
+  foreach ($arenas as $a) {
+    echo "<option value='{$a['id']}'>".htmlspecialchars($a['name'])."</option>";
+  }
+  echo "</select></div>
+    <div class='form-group'><label for='floor_beacon'>Piso</label><input id='floor_beacon' type='number' name='floor' required></div>
+    <div class='form-group'><label for='uuid'>UUID</label><input id='uuid' name='uuid' placeholder='xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' required></div>
+    <div class='form-group'><label for='x'>X (metros)</label><input id='x' type='number' step='0.01' name='x' required></div>
+    <div class='form-group'><label for='y'>Y (metros)</label><input id='y' type='number' step='0.01' name='y' required></div>
+    <div class='form-group'><label for='label'>Etiqueta (opcional)</label><input id='label' name='label' placeholder='Entrada Norte'></div>
+    <button type='submit' class='btn'>Guardar beacon</button>
+  </form></section>";
+
+  echo "<section class='card' style='margin-top:1.5rem;'>
+    <h2>Selecionar no mapa</h2>
+    <p class='muted'>Escolhe o piso e clica no mapa para preencher X/Y. As dimensoes devem estar definidas em Mapas.</p>
+    <div class='map-picker'>
+      <div class='map-picker-toolbar'>
+        <span id='map-picker-status' class='muted'>Seleciona um piso com mapa.</span>
+      </div>
+      <div class='map-picker-canvas'>
+        <img id='map-picker-image' alt='Mapa do piso' />
+        <div id='map-picker-marker' aria-hidden='true'></div>
+      </div>
+    </div>
+  </section>";
+
+  echo "<script>
+  (function(){
+    var form = document.querySelector('form[data-maps]');
+    if (!form) return;
+    var mapsByArena = {};
+    try { mapsByArena = JSON.parse(form.getAttribute('data-maps') || '{}'); } catch (e) {}
+
+    var arenaSel = document.getElementById('arena_id_beacon');
+    var floorInput = document.getElementById('floor_beacon');
+    var img = document.getElementById('map-picker-image');
+    var marker = document.getElementById('map-picker-marker');
+    var status = document.getElementById('map-picker-status');
+    var xInput = document.getElementById('x');
+    var yInput = document.getElementById('y');
+    var currentMap = null;
+
+    function findMap(arenaId, floor) {
+      var list = mapsByArena[String(arenaId)] || [];
+      for (var i=0; i<list.length; i++) {
+        if (Number(list[i].floor) === Number(floor)) return list[i];
+      }
+      return null;
+    }
+
+    function updateMap() {
+      var arenaId = arenaSel.value;
+      var floor = floorInput.value;
+      currentMap = findMap(arenaId, floor);
+      marker.style.display = 'none';
+      if (!currentMap) {
+        img.removeAttribute('src');
+        status.textContent = 'Sem mapa para este piso.';
+        return;
+      }
+      if (!currentMap.width || !currentMap.height) {
+        img.src = currentMap.map_url;
+        status.textContent = 'Define a largura/altura deste mapa em Mapas.';
+        return;
+      }
+      img.src = currentMap.map_url;
+      status.textContent = 'Clica no mapa para definir X/Y.';
+    }
+
+    function positionMarker(px, py) {
+      marker.style.left = px + 'px';
+      marker.style.top = py + 'px';
+      marker.style.display = 'block';
+    }
+
+    function handleClick(ev) {
+      if (!currentMap || !currentMap.width || !currentMap.height) return;
+      var rect = img.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      var x = ev.clientX - rect.left;
+      var y = ev.clientY - rect.top;
+      if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
+      var metersX = (x / rect.width) * Number(currentMap.width);
+      var metersY = (y / rect.height) * Number(currentMap.height);
+      xInput.value = metersX.toFixed(2);
+      yInput.value = metersY.toFixed(2);
+      positionMarker(x, y);
+    }
+
+    arenaSel.addEventListener('change', updateMap);
+    floorInput.addEventListener('input', updateMap);
+    img.addEventListener('click', handleClick);
+    updateMap();
+  })();
+  </script>";
+
+  if ($beaconsByArena) {
+    echo "<section class='card' style='margin-top:1.5rem;'><h2>Beacons registados</h2>";
+    foreach ($beaconsByArena as $aid => $bundle) {
+      $aName = htmlspecialchars($bundle['name']);
+      echo "<h3>$aName</h3>";
+      echo "<table class='table'><thead><tr><th>Piso</th><th>UUID</th><th>X</th><th>Y</th><th>Etiqueta</th></tr></thead><tbody>";
+      foreach ($bundle['rows'] as $row) {
+        $floor = (int)$row['floor'];
+        $uuid = htmlspecialchars($row['uuid']);
+        $xVal = $row['x'] !== null ? htmlspecialchars((string)$row['x']) : '—';
+        $yVal = $row['y'] !== null ? htmlspecialchars((string)$row['y']) : '—';
+        $label = $row['label'] ? htmlspecialchars($row['label']) : '—';
+        echo "<tr><td>$floor</td><td>$uuid</td><td>$xVal</td><td>$yVal</td><td>$label</td></tr>";
+      }
+      echo "</tbody></table>";
+    }
+    echo "</section>";
+  }
+
+  echo "<section class='card' style='margin-top:1.5rem;'><p class='muted'>Define as coordenadas X/Y em metros, compatíveis com as dimensões do mapa para cada piso.</p></section>";
   page_footer(); exit;
 }
 /* ---------- HOME ---------- */
@@ -769,16 +1055,17 @@ echo <<<HTML
     <section id='api'>
       <h2>API (resumo)</h2>
       <div class='api-card'>
-        <pre>POST /api/register              {email,password,display_name}
-POST /api/login                 {email,password}
-POST /api/arena/create          (Bearer)
-GET  /api/arena/list            (Bearer)
-POST /api/match/create          (Bearer)
-GET  /api/match/list?arena_id   (Bearer)
-POST /api/match/join            (Bearer)
-POST /api/match/register-player (Bearer)
-GET  /api/match/roster?match_id (Bearer)
-POST /api/scan                  (Bearer)</pre>
+        <pre>POST /api/register               {email,password,display_name}
+POST /api/login                  {email,password}
+POST /api/arena/create           (Bearer)
+GET  /api/arena/list             (Bearer)
+POST /api/match/create           (Bearer)
+GET  /api/match/list?arena_id    (Bearer)
+POST /api/match/join             (Bearer)
+POST /api/match/register-player  (Bearer)
+GET  /api/match/roster?match_id  (Bearer)
+GET  /api/maps?match_id|arena_id {maps:[{floor,map_url,width,height,beacons}]}
+POST /api/scan                   (Bearer)</pre>
       </div>
     </section>
 

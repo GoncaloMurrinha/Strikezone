@@ -224,10 +224,32 @@ final class ApiController {
       $arenaId = (int)$match['arena_id'];
     }
     if ($arenaId<=0){ json_out(['error'=>'invalid_arena'],422); return; }
+    $beaconsRaw = $this->repo->findBeaconsByArena($arenaId);
+    $beaconsByFloor = [];
+    foreach ($beaconsRaw as $b) {
+      if ($b['x'] === null || $b['y'] === null) {
+        continue;
+      }
+      $floor = (int)$b['floor'];
+      if (!isset($beaconsByFloor[$floor])) {
+        $beaconsByFloor[$floor] = [];
+      }
+      $beaconsByFloor[$floor][] = [
+        'uuid' => strtolower((string)$b['uuid']),
+        'major' => (int)$b['major'],
+        'minor' => (int)$b['minor'],
+        'x' => (float)$b['x'],
+        'y' => (float)$b['y']
+      ];
+    }
     $mapsRaw = $this->repo->listMapsByArena($arenaId);
     $maps = [];
     foreach ($mapsRaw as $row) {
       $row['map_url'] = $this->absoluteUrl($row['map_url'] ?? '');
+      $row['width'] = $row['width'] !== null ? (float)$row['width'] : null;
+      $row['height'] = $row['height'] !== null ? (float)$row['height'] : null;
+      $floor = (int)($row['floor'] ?? 0);
+      $row['beacons'] = $beaconsByFloor[$floor] ?? [];
       $maps[] = $row;
     }
     json_out(['ok'=>true,'arena_id'=>$arenaId,'count'=>count($maps),'maps'=>$maps]);

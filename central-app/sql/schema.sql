@@ -55,6 +55,8 @@ CREATE TABLE IF NOT EXISTS maps (
   floor INT NOT NULL,
   name VARCHAR(120) NOT NULL,
   map_url VARCHAR(500) NOT NULL,
+  width DOUBLE DEFAULT NULL,
+  height DOUBLE DEFAULT NULL,
   UNIQUE KEY uniq_arena_floor (arena_id, floor),
   FOREIGN KEY (arena_id) REFERENCES arenas(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
@@ -69,6 +71,8 @@ CREATE TABLE IF NOT EXISTS beacons (
   floor INT NOT NULL,
   tx_power INT DEFAULT -59,
   label VARCHAR(120) DEFAULT NULL,
+  x DOUBLE DEFAULT NULL,
+  y DOUBLE DEFAULT NULL,
   UNIQUE KEY uniq_beacon (arena_id, uuid, major, minor),
   FOREIGN KEY (arena_id) REFERENCES arenas(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

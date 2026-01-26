@@ -4,16 +4,15 @@ import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
-import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Looper
-import android.os.ParcelUuid
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -33,7 +32,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.lang.Exception
-import java.util.UUID
 
 class GameFragment : Fragment() {
 
@@ -46,18 +44,20 @@ class GameFragment : Fragment() {
     private lateinit var locationCallback: LocationCallback
     private var rosterRefreshJob: Job? = null
     private var bleStatusJob: Job? = null
+    private var apiScanJob: Job? = null
 
     private val bluetoothAdapter: BluetoothAdapter? by lazy {
         val manager = requireActivity().getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
         manager?.adapter
     }
 
-    // UUIDs fornecidos para redundância
     private val uuidFloor0 = "76543212-1234-5678-1234-56789abcdef0"
     private val uuidFloor1 = "12345678-1234-5678-1234-56789abcdef0"
 
     private var ble1Active = false
     private var ble2Active = false
+    private var ble1Rssi = -100
+    private var ble2Rssi = -100
     private var ble1LastSeen = 0L
     private var ble2LastSeen = 0L
     private var currentFloor = "--"
@@ -67,6 +67,14 @@ class GameFragment : Fragment() {
     private val permissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { startLocationUpdates(); startBleScan() }
+
+    private val bluetoothEnableLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (bluetoothAdapter?.isEnabled == true) {
+            startBleScan()
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentGameBinding.inflate(inflater, container, false)
@@ -114,7 +122,7 @@ class GameFragment : Fragment() {
         if (_binding == null || isMapLoading) return
         isMapLoading = true
         binding.mapLoader.isVisible = true
-        
+
         lifecycleScope.launch {
             try {
                 val response = RetrofitInstance.api.getMaps(args.matchId)
@@ -131,9 +139,9 @@ class GameFragment : Fragment() {
                     }
                 }
             } catch (e: Exception) { Log.e("GameFragment", "Map error") }
-            finally { 
+            finally {
                 isMapLoading = false
-                _binding?.mapLoader?.isVisible = false 
+                _binding?.mapLoader?.isVisible = false
             }
         }
     }
@@ -143,20 +151,19 @@ class GameFragment : Fragment() {
             val deviceName = result.device.name ?: result.scanRecord?.deviceName
             val uuids = result.scanRecord?.serviceUuids?.map { it.uuid.toString().lowercase() } ?: emptyList()
             val now = System.currentTimeMillis()
+            val rssi = result.rssi
 
-            // Lógica para Andar 0 (B0)
             if ((deviceName != null && deviceName.endsWith("B0")) || uuids.contains(uuidFloor0.lowercase())) {
                 ble1Active = true
                 ble1LastSeen = now
-                currentFloor = "0"
-                Log.d("BLE_SCAN", "Detectado B0 (Andar 0)")
-            } 
-            // Lógica para Andar 1 (B1)
+                ble1Rssi = rssi
+                if (rssi > -50) currentFloor = "0"
+            }
             else if ((deviceName != null && deviceName.endsWith("B1")) || uuids.contains(uuidFloor1.lowercase())) {
                 ble2Active = true
                 ble2LastSeen = now
-                currentFloor = "1"
-                Log.d("BLE_SCAN", "Detectado B1 (Andar 1)")
+                ble2Rssi = rssi
+                if (rssi > -50) currentFloor = "1"
             }
         }
     }
@@ -164,16 +171,38 @@ class GameFragment : Fragment() {
     private fun updateStatusUI() {
         if (_binding == null) return
         val now = System.currentTimeMillis()
-        
-        if (now - ble1LastSeen > 8000) ble1Active = false
-        if (now - ble2LastSeen > 8000) ble2Active = false
-        
-        binding.bleStatusTextView.text = "BLE 1: ${if (ble1Active) "OK" else "--"} | BLE 2: ${if (ble2Active) "OK" else "--"}"
+
+        if (now - ble1LastSeen > 8000) { ble1Active = false; ble1Rssi = -100 }
+        if (now - ble2LastSeen > 8000) { ble2Active = false; ble2Rssi = -100 }
+
+        val status1 = if (ble1Active) "${ble1Rssi}dBm" else "--"
+        val status2 = if (ble2Active) "${ble2Rssi}dBm" else "--"
+
+        binding.bleStatusTextView.text = "B0: $status1 | B1: $status2"
         binding.floorTextView.text = "Andar: $currentFloor"
 
         if (currentFloor != "--" && currentFloor != displayedFloor && !isMapLoading) {
             loadMap(currentFloor.toInt())
         }
+    }
+
+    private suspend fun sendScanToServer() {
+        if (!ble1Active && !ble2Active) return
+        val readings = mutableListOf<ScanReading>()
+        if (ble1Active) readings.add(ScanReading(uuidFloor0, 0, 0, ble1Rssi))
+        if (ble2Active) readings.add(ScanReading(uuidFloor1, 0, 0, ble2Rssi))
+
+        try {
+            val request = ScanRequest(
+                match_id = args.matchId,
+                team_id = if (args.team == "A") 1 else 2,
+                player_id = args.playerId,
+                arena_id = 1,
+                last_floor = if (currentFloor == "--") 0 else currentFloor.toInt(),
+                readings = readings
+            )
+            RetrofitInstance.api.sendScan("Bearer ${args.token}", request)
+        } catch (e: Exception) { Log.e("GameFragment", "Send scan error") }
     }
 
     private fun startLocationUpdates() {
@@ -182,16 +211,22 @@ class GameFragment : Fragment() {
     }
 
     private fun startBleScan() {
-        val scanner = bluetoothAdapter?.bluetoothLeScanner ?: return
-        if (bluetoothAdapter?.isEnabled == false) return
+        if (bluetoothAdapter == null) return
 
+        if (bluetoothAdapter?.isEnabled == false) {
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            bluetoothEnableLauncher.launch(enableBtIntent)
+            return
+        }
+
+        val scanner = bluetoothAdapter?.bluetoothLeScanner ?: return
         val settings = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .build()
 
         try {
             scanner.startScan(null, settings, scanCallback)
-            Log.d("BLE_SCAN", "Scan híbrido iniciado (Nome + UUID)")
+            Log.d("BLE_SCAN", "Scan iniciado")
         } catch(e: SecurityException) { }
     }
 
@@ -205,10 +240,13 @@ class GameFragment : Fragment() {
             while(isActive) { loadTeamRoster(); delay(8000) }
         }
         bleStatusJob = lifecycleScope.launch {
-            while(isActive) { 
+            while(isActive) {
                 activity?.runOnUiThread { updateStatusUI() }
-                delay(3000)
+                delay(2000)
             }
+        }
+        apiScanJob = lifecycleScope.launch {
+            while(isActive) { sendScanToServer(); delay(5000) }
         }
     }
 
@@ -230,7 +268,7 @@ class GameFragment : Fragment() {
         requireActivity().requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         fusedLocationClient.removeLocationUpdates(locationCallback)
         try { bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback) } catch (e: Exception) { }
-        rosterRefreshJob?.cancel(); bleStatusJob?.cancel()
+        rosterRefreshJob?.cancel(); bleStatusJob?.cancel(); apiScanJob?.cancel()
     }
 
     override fun onDestroyView() { super.onDestroyView() ; _binding = null }
