@@ -411,3 +411,84 @@
 [Mon Jan 26 16:05:03 2026] 127.0.0.1:63325 Accepted
 [Mon Jan 26 16:05:03 2026] 127.0.0.1:63325 [200]: GET /uploads/maps/map_a2_floor_0_1764746685.png
 [Mon Jan 26 16:05:03 2026] 127.0.0.1:63325 Closing
+[Mon Jan 26 17:07:28 2026] 127.0.0.1:63634 Accepted
+[Mon Jan 26 17:07:28 2026] 127.0.0.1:63634 [200]: GET /uploads/maps/map_a1_floor_0_1764426871.png
+[Mon Jan 26 17:07:28 2026] 127.0.0.1:63634 Closing
+[Tue Jan 27 16:42:10 2026] 127.0.0.1:50619 Accepted
+[Tue Jan 27 16:42:10 2026] 127.0.0.1:50620 Accepted
+[Tue Jan 27 16:42:10 2026] 127.0.0.1:50620 Closing
+[Tue Jan 27 16:42:10 2026] 127.0.0.1:50619 [200]: GET /assets/app.css
+[Tue Jan 27 16:42:10 2026] 127.0.0.1:50622 Accepted
+[Tue Jan 27 16:42:10 2026] 127.0.0.1:50622 [200]: GET /assets/logo_strikezone.png
+[Tue Jan 27 16:42:10 2026] 127.0.0.1:50619 Closing
+[Tue Jan 27 16:42:10 2026] 127.0.0.1:50622 Closing
+[Tue Jan 27 16:42:10 2026] 127.0.0.1:50624 Accepted
+[Tue Jan 27 16:42:10 2026] 127.0.0.1:50624 Closing
+[Tue Jan 27 16:42:10 2026] 127.0.0.1:50627 Accepted
+[Tue Jan 27 16:42:10 2026] 127.0.0.1:50627 Closing
+[Tue Jan 27 16:42:11 2026] 127.0.0.1:50630 Accepted
+[Tue Jan 27 16:42:11 2026] 127.0.0.1:50630 Closing
+[Tue Jan 27 16:42:11 2026] 127.0.0.1:50633 Accepted
+[Tue Jan 27 16:42:11 2026] 127.0.0.1:50633 [200]: GET /assets/app.css
+[Tue Jan 27 16:42:11 2026] 127.0.0.1:50634 Accepted
+[Tue Jan 27 16:42:11 2026] 127.0.0.1:50634 [200]: GET /assets/logo_strikezone.png
+[Tue Jan 27 16:42:11 2026] 127.0.0.1:50633 Closing
+[Tue Jan 27 16:42:11 2026] 127.0.0.1:50634 Closing
+[Tue Jan 27 16:42:11 2026] 127.0.0.1:50636 Accepted
+[Tue Jan 27 16:42:11 2026] 127.0.0.1:50636 Closing
+[Tue Jan 27 16:42:11 2026] 127.0.0.1:50637 Accepted
+[Tue Jan 27 16:42:11 2026] 127.0.0.1:50638 Accepted
+[Tue Jan 27 16:42:11 2026] 127.0.0.1:50637 Closing
+[Tue Jan 27 16:42:11 2026] 127.0.0.1:50638 Closing
+[Tue Jan 27 16:42:22 2026] 127.0.0.1:50644 Accepted
+[Tue Jan 27 16:42:22 2026] 127.0.0.1:50645 Accepted
+[Tue Jan 27 16:42:22 2026] 127.0.0.1:50646 Accepted
+[Tue Jan 27 16:42:22 2026] 127.0.0.1:50647 Accepted
+[Tue Jan 27 16:42:22 2026] 127.0.0.1:50645 Closing
+[Tue Jan 27 16:42:22 2026] 127.0.0.1:50644 [200]: GET /assets/app.css
+[Tue Jan 27 16:42:22 2026] 127.0.0.1:50646 [200]: GET /assets/logo_strikezone.png
+[Tue Jan 27 16:42:22 2026] 127.0.0.1:50644 Closing
+[Tue Jan 27 16:42:22 2026] 127.0.0.1:50646 Closing
+[Tue Jan 27 16:42:32 2026] 127.0.0.1:50647 Closing
+[Tue Jan 27 16:42:32 2026] 127.0.0.1:50650 Accepted
+[Tue Jan 27 16:42:32 2026] 127.0.0.1:50651 Accepted
+[Tue Jan 27 16:42:32 2026] 127.0.0.1:50652 Accepted
+[Tue Jan 27 16:42:32 2026] 127.0.0.1:50650 [200]: GET /assets/app.css
+[Tue Jan 27 16:42:32 2026] 127.0.0.1:50650 Closing
+[Tue Jan 27 16:42:32 2026] 127.0.0.1:50651 [200]: GET /assets/logo_strikezone.png
+[Tue Jan 27 16:42:32 2026] 127.0.0.1:50651 Closing
+[Tue Jan 27 16:42:32 2026] 127.0.0.1:50652 [200]: GET /uploads/maps/map_a3_floor_0_1764791150.png
+[Tue Jan 27 16:42:32 2026] 127.0.0.1:50652 Closing
+[Tue Jan 27 16:42:36 2026] 127.0.0.1:50655 Accepted
+[Tue Jan 27 16:42:36 2026] 127.0.0.1:50655 [200]: GET /uploads/maps/map_a2_floor_0_1764746685.png
+[Tue Jan 27 16:42:36 2026] 127.0.0.1:50655 Closing
+[Tue Jan 27 16:45:58 2026] 127.0.0.1:50670 Accepted
+[Tue Jan 27 16:45:58 2026] 127.0.0.1:50670 Closing
+[Tue Jan 27 16:45:58 2026] 127.0.0.1:50673 Accepted
+[Tue Jan 27 16:45:58 2026] 127.0.0.1:50673 Closing
+[Tue Jan 27 16:45:58 2026] 127.0.0.1:50676 Accepted
+[Tue Jan 27 16:45:58 2026] 127.0.0.1:50676 [200]: GET /assets/logo_strikezone.png
+[Tue Jan 27 16:45:58 2026] 127.0.0.1:50676 Closing
+[Tue Jan 27 16:46:24 2026] 127.0.0.1:50678 Accepted
+[Tue Jan 27 16:46:24 2026] 127.0.0.1:50678 Closing
+[Tue Jan 27 16:46:24 2026] 127.0.0.1:50681 Accepted
+[Tue Jan 27 16:46:24 2026] 127.0.0.1:50681 [200]: GET /assets/logo_strikezone.png
+[Tue Jan 27 16:46:24 2026] 127.0.0.1:50681 Closing
+[Tue Jan 27 16:46:44 2026] 127.0.0.1:50683 Accepted
+[Tue Jan 27 16:46:44 2026] 127.0.0.1:50683 Closing
+[Tue Jan 27 16:46:44 2026] 127.0.0.1:50686 Accepted
+[Tue Jan 27 16:46:44 2026] 127.0.0.1:50686 Closing
+[Tue Jan 27 16:46:44 2026] 127.0.0.1:50689 Accepted
+[Tue Jan 27 16:46:44 2026] 127.0.0.1:50689 [200]: GET /assets/app.css
+[Tue Jan 27 16:46:44 2026] 127.0.0.1:50690 Accepted
+[Tue Jan 27 16:46:44 2026] 127.0.0.1:50689 Closing
+[Tue Jan 27 16:46:44 2026] 127.0.0.1:50690 [200]: GET /assets/logo_strikezone.png
+[Tue Jan 27 16:46:44 2026] 127.0.0.1:50690 Closing
+[Tue Jan 27 16:46:46 2026] 127.0.0.1:50692 Accepted
+[Tue Jan 27 16:46:46 2026] 127.0.0.1:50692 Closing
+[Tue Jan 27 16:46:46 2026] 127.0.0.1:50695 Accepted
+[Tue Jan 27 16:46:46 2026] 127.0.0.1:50695 [200]: GET /assets/app.css
+[Tue Jan 27 16:46:46 2026] 127.0.0.1:50696 Accepted
+[Tue Jan 27 16:46:46 2026] 127.0.0.1:50695 Closing
+[Tue Jan 27 16:46:46 2026] 127.0.0.1:50696 [200]: GET /assets/logo_strikezone.png
+[Tue Jan 27 16:46:46 2026] 127.0.0.1:50696 Closing
