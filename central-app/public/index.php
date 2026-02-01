@@ -41,6 +41,7 @@ if ($uri==='/api/match/roster' && $method==='GET')  { $api->matchRoster(); exit;
 if ($uri==='/api/match/team-roster' && $method==='GET') { $api->teamRoster(); exit; }
 
 if ($uri==='/api/scan' && $method==='POST') { $api->submitScan(); exit; }
+if ($uri==='/api/location' && $method==='POST') { $api->submitLocation(); exit; }
 if ($uri==='/api/maps' && $method==='GET') { $api->mapList(); exit; }
 
 /* ---------- OWNER UI ---------- */

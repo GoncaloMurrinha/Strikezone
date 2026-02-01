@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.graphics.RectF
 import android.os.Build
 import android.os.Bundle
 import android.os.Looper
@@ -32,6 +33,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.lang.Exception
+import kotlin.math.pow
 
 class GameFragment : Fragment() {
 
@@ -63,6 +65,10 @@ class GameFragment : Fragment() {
     private var currentFloor = "--"
     private var displayedFloor = ""
     private var isMapLoading = false
+
+    private var currentMapWidth: Double = 0.0
+    private var currentMapHeight: Double = 0.0
+    private var currentBeacons: List<BeaconInfo> = emptyList()
 
     private val permissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -100,24 +106,6 @@ class GameFragment : Fragment() {
         binding.teamNameTextView.text = if (args.team.equals("A", ignoreCase = true)) "Terrorista" else "Contra Terrorista"
     }
 
-    private suspend fun loadTeamRoster() {
-        if (_binding == null) return
-        try {
-            val response = RetrofitInstance.api.getTeamRoster("Bearer ${args.token}", args.matchId, args.team)
-            if (_binding != null && response.isSuccessful && response.body()?.ok == true) {
-                binding.playerListContainer.removeAllViews()
-                response.body()?.players?.forEach { player ->
-                    val tv = TextView(requireContext()).apply {
-                        text = "- ${player.name}"
-                        setTextColor(ContextCompat.getColor(context, R.color.text_hint))
-                        textSize = 16f
-                    }
-                    binding.playerListContainer.addView(tv)
-                }
-            }
-        } catch (e: Exception) { Log.e("GameFragment", "Roster error") }
-    }
-
     private fun loadMap(floor: Int) {
         if (_binding == null || isMapLoading) return
         isMapLoading = true
@@ -128,13 +116,13 @@ class GameFragment : Fragment() {
                 val response = RetrofitInstance.api.getMaps(args.matchId)
                 if (response.isSuccessful && response.body()?.ok == true) {
                     val mapForFloor = response.body()?.maps?.firstOrNull { it.floor == floor }
-                    if (_binding != null) {
-                        if (mapForFloor != null) {
-                            val url = mapForFloor.mapUrl.replace("http://central-app.local", RetrofitInstance.BASE_URL.removeSuffix("/"))
-                            Glide.with(this@GameFragment).load(url).into(binding.mapImageView)
-                        } else {
-                            binding.mapImageView.setImageDrawable(null)
-                        }
+                    if (_binding != null && mapForFloor != null) {
+                        currentMapWidth = mapForFloor.width ?: 0.0
+                        currentMapHeight = mapForFloor.height ?: 0.0
+                        currentBeacons = mapForFloor.beacons ?: emptyList()
+
+                        val url = mapForFloor.mapUrl.replace("http://central-app.local", RetrofitInstance.BASE_URL.removeSuffix("/"))
+                        Glide.with(this@GameFragment).load(url).into(binding.mapImageView)
                         displayedFloor = floor.toString()
                     }
                 }
@@ -184,6 +172,63 @@ class GameFragment : Fragment() {
         if (currentFloor != "--" && currentFloor != displayedFloor && !isMapLoading) {
             loadMap(currentFloor.toInt())
         }
+        
+        updateUserDotPosition()
+    }
+
+    private fun updateUserDotPosition() {
+        if (_binding == null || currentMapWidth <= 0 || currentMapHeight <= 0) {
+            binding.userDot.isVisible = false
+            return
+        }
+
+        val activeBeaconsOnMap = mutableListOf<Pair<BeaconInfo, Int>>()
+        if (ble1Active) {
+            currentBeacons.find { it.uuid.equals(uuidFloor0, ignoreCase = true) }?.let { activeBeaconsOnMap.add(it to ble1Rssi) }
+        }
+        if (ble2Active) {
+            currentBeacons.find { it.uuid.equals(uuidFloor1, ignoreCase = true) }?.let { activeBeaconsOnMap.add(it to ble2Rssi) }
+        }
+
+        if (activeBeaconsOnMap.isEmpty()) {
+            binding.userDot.isVisible = false
+            return
+        }
+
+        var totalWeight = 0.0
+        var weightedX = 0.0
+        var weightedY = 0.0
+
+        activeBeaconsOnMap.forEach { (beacon, rssi) ->
+            val weight = (rssi + 100).toDouble().pow(2) 
+            weightedX += beacon.x * weight
+            weightedY += beacon.y * weight
+            totalWeight += weight
+        }
+
+        val posX = weightedX / totalWeight
+        val posY = weightedY / totalWeight
+
+        val imageRect = getImageBounds(binding.mapImageView)
+        if (imageRect.width() > 0) {
+            val pixelX = imageRect.left + (posX / currentMapWidth * imageRect.width())
+            val pixelY = imageRect.top + (posY / currentMapHeight * imageRect.height())
+
+            binding.userDot.x = pixelX.toFloat() - (binding.userDot.width / 2)
+            binding.userDot.y = pixelY.toFloat() - (binding.userDot.height / 2)
+            binding.userDot.isVisible = true
+        }
+    }
+
+    private fun getImageBounds(imageView: android.widget.ImageView): RectF {
+        val drawable = imageView.drawable ?: return RectF()
+        val values = FloatArray(9)
+        imageView.imageMatrix.getValues(values)
+        val left = values[android.graphics.Matrix.MTRANS_X]
+        val top = values[android.graphics.Matrix.MTRANS_Y]
+        val scaleX = values[android.graphics.Matrix.MSCALE_X]
+        val scaleY = values[android.graphics.Matrix.MSCALE_Y]
+        return RectF(left, top, left + (drawable.intrinsicWidth * scaleX), top + (drawable.intrinsicHeight * scaleY))
     }
 
     private suspend fun sendScanToServer() {
@@ -212,22 +257,14 @@ class GameFragment : Fragment() {
 
     private fun startBleScan() {
         if (bluetoothAdapter == null) return
-
         if (bluetoothAdapter?.isEnabled == false) {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             bluetoothEnableLauncher.launch(enableBtIntent)
             return
         }
-
         val scanner = bluetoothAdapter?.bluetoothLeScanner ?: return
-        val settings = ScanSettings.Builder()
-            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-            .build()
-
-        try {
-            scanner.startScan(null, settings, scanCallback)
-            Log.d("BLE_SCAN", "Scan iniciado")
-        } catch(e: SecurityException) { }
+        val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+        try { scanner.startScan(null, settings, scanCallback) } catch(e: SecurityException) { }
     }
 
     override fun onResume() {
@@ -242,12 +279,31 @@ class GameFragment : Fragment() {
         bleStatusJob = lifecycleScope.launch {
             while(isActive) {
                 activity?.runOnUiThread { updateStatusUI() }
-                delay(2000)
+                delay(1000) // UI e Ponto Vermelho atualizam de 1 em 1 seg
             }
         }
         apiScanJob = lifecycleScope.launch {
-            while(isActive) { sendScanToServer(); delay(5000) }
+            while(isActive) { 
+                sendScanToServer()
+                delay(1000) // Pedido ao servidor de 1 em 1 seg para máxima precisão
+            }
         }
+    }
+
+    private suspend fun loadTeamRoster() {
+        if (_binding == null) return
+        try {
+            val response = RetrofitInstance.api.getTeamRoster("Bearer ${args.token}", args.matchId, args.team)
+            if (_binding != null && response.isSuccessful) {
+                binding.playerListContainer.removeAllViews()
+                response.body()?.players?.forEach { player ->
+                    val tv = TextView(requireContext()).apply {
+                        text = "- ${player.name}"; setTextColor(ContextCompat.getColor(context, R.color.text_hint)); textSize = 16f
+                    }
+                    binding.playerListContainer.addView(tv)
+                }
+            }
+        } catch (e: Exception) { }
     }
 
     private fun checkPermissionsAndStartServices() {

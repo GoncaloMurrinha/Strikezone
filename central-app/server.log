@@ -492,3 +492,11 @@
 [Tue Jan 27 16:46:46 2026] 127.0.0.1:50695 Closing
 [Tue Jan 27 16:46:46 2026] 127.0.0.1:50696 [200]: GET /assets/logo_strikezone.png
 [Tue Jan 27 16:46:46 2026] 127.0.0.1:50696 Closing
+[Thu Jan 29 21:09:43 2026] 127.0.0.1:60682 Accepted
+[Thu Jan 29 21:09:43 2026] 127.0.0.1:60682 Closing
+[Thu Jan 29 21:11:20 2026] 127.0.0.1:60701 Accepted
+[Thu Jan 29 21:11:20 2026] [codeResolve] method=GET code=ABC123
+[Thu Jan 29 21:11:20 2026] [codeResolve] not_found for code=ABC123
+[Thu Jan 29 21:11:20 2026] 127.0.0.1:60701 Closing
+[Thu Jan 29 21:11:20 2026] 127.0.0.1:60704 Accepted
+[Thu Jan 29 21:11:20 2026] 127.0.0.1:60704 Closing

@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 final class Repository {
+  private bool $locationsReady = false;
   public function __construct(private PDO $pdo) {}
 
   // ----- USERS -----
@@ -158,5 +159,65 @@ final class Repository {
   public function insertScan(int $matchId,int $teamId,int $playerId,int $floor,array $payload): void {
     $st = $this->pdo->prepare('INSERT INTO scans (match_id,team_id,player_id,floor,payload) VALUES (?,?,?,?,?)');
     $st->execute([$matchId,$teamId,$playerId,$floor,json_encode($payload, JSON_UNESCAPED_UNICODE)]);
+  }
+
+  // ----- LOCATIONS -----
+  private function ensureLocationsTable(): void {
+    if ($this->locationsReady) return;
+    $this->pdo->exec('
+      CREATE TABLE IF NOT EXISTS locations (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        match_id INT NOT NULL,
+        team_id INT NOT NULL,
+        player_id INT NOT NULL,
+        arena_id INT NOT NULL,
+        lat DOUBLE NOT NULL,
+        lon DOUBLE NOT NULL,
+        accuracy FLOAT NULL,
+        speed FLOAT NULL,
+        heading FLOAT NULL,
+        altitude FLOAT NULL,
+        device_ts BIGINT NULL,
+        INDEX idx_match (match_id),
+        INDEX idx_player (player_id),
+        INDEX idx_arena (arena_id),
+        FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB
+    ');
+    $this->locationsReady = true;
+  }
+  public function insertLocation(
+    int $matchId,
+    int $teamId,
+    int $playerId,
+    int $arenaId,
+    float $lat,
+    float $lon,
+    ?float $accuracy,
+    ?float $speed,
+    ?float $heading,
+    ?float $altitude,
+    ?int $deviceTs
+  ): void {
+    $this->ensureLocationsTable();
+    $st = $this->pdo->prepare('
+      INSERT INTO locations
+        (match_id,team_id,player_id,arena_id,lat,lon,accuracy,speed,heading,altitude,device_ts)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    ');
+    $st->execute([
+      $matchId,
+      $teamId,
+      $playerId,
+      $arenaId,
+      $lat,
+      $lon,
+      $accuracy,
+      $speed,
+      $heading,
+      $altitude,
+      $deviceTs
+    ]);
   }
 }

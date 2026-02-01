@@ -441,4 +441,52 @@ final class ApiController {
 
     json_out(['ok'=>true,'floor'=>$floor,'confidence'=>$decision['confidence']]);
   }
+
+  // ---- LOCATION ----
+  // POST /api/location { match_id, team_id, player_id, arena_id, lat, lon, accuracy?, speed?, heading?, altitude?, device_ts? }
+  public function submitLocation(): void {
+    $in = json_input();
+    $matchId = (int)($in['match_id'] ?? 0);
+    $teamId  = (int)($in['team_id'] ?? 0);
+    $playerId= (int)($in['player_id'] ?? 0);
+    $arenaId = (int)($in['arena_id'] ?? 0);
+    $hasLat = array_key_exists('lat', $in);
+    $hasLon = array_key_exists('lon', $in);
+    $lat = $hasLat ? (float)$in['lat'] : null;
+    $lon = $hasLon ? (float)$in['lon'] : null;
+    $accuracy = array_key_exists('accuracy', $in) ? (float)$in['accuracy'] : null;
+    $speed = array_key_exists('speed', $in) ? (float)$in['speed'] : null;
+    $heading = array_key_exists('heading', $in) ? (float)$in['heading'] : null;
+    $altitude = array_key_exists('altitude', $in) ? (float)$in['altitude'] : null;
+    $deviceTs = array_key_exists('device_ts', $in) ? (int)$in['device_ts'] : null;
+
+    if ($matchId<=0 || $teamId<=0 || $playerId<=0 || $arenaId<=0 || !$hasLat || !$hasLon) {
+      json_out(['error'=>'invalid_input'],422); return;
+    }
+    if ($lat < -90 || $lat > 90 || $lon < -180 || $lon > 180) {
+      json_out(['error'=>'invalid_location'],422); return;
+    }
+
+    $match = $this->repo->getMatchById($matchId);
+    if (!$match){ json_out(['error'=>'not_found'],404); return; }
+    $side = self::sideFromTeamId($matchId, $teamId);
+    if ($side === null) { json_out(['error'=>'invalid_team'],422); return; }
+    $this->authenticateMatchRequest($match, $side);
+
+    $this->repo->insertLocation(
+      $matchId,
+      $teamId,
+      $playerId,
+      $arenaId,
+      $lat,
+      $lon,
+      $accuracy,
+      $speed,
+      $heading,
+      $altitude,
+      $deviceTs
+    );
+
+    json_out(['ok'=>true]);
+  }
 }
