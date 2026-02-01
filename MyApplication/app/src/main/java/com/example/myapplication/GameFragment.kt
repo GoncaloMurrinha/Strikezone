@@ -20,6 +20,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -126,7 +127,7 @@ class GameFragment : Fragment() {
                         displayedFloor = floor.toString()
                     }
                 }
-            } catch (e: Exception) { Log.e("GameFragment", "Map error") }
+            } catch (e: Exception) { Log.e("GameFragment", "Map error", e) }
             finally {
                 isMapLoading = false
                 _binding?.mapLoader?.isVisible = false
@@ -136,6 +137,10 @@ class GameFragment : Fragment() {
 
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
+            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) return
+            }
+            
             val deviceName = result.device.name ?: result.scanRecord?.deviceName
             val uuids = result.scanRecord?.serviceUuids?.map { it.uuid.toString().lowercase() } ?: emptyList()
             val now = System.currentTimeMillis()
@@ -247,12 +252,16 @@ class GameFragment : Fragment() {
                 readings = readings
             )
             RetrofitInstance.api.sendScan("Bearer ${args.token}", request)
-        } catch (e: Exception) { Log.e("GameFragment", "Send scan error") }
+        } catch (e: Exception) { Log.e("GameFragment", "Send scan error", e) }
     }
 
     private fun startLocationUpdates() {
         val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 10000).build()
-        try { fusedLocationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper()) } catch (e: SecurityException) { }
+        try { 
+            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                fusedLocationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper()) 
+            }
+        } catch (e: SecurityException) { Log.e("GameFragment", "Location error", e) }
     }
 
     private fun startBleScan() {
@@ -264,7 +273,11 @@ class GameFragment : Fragment() {
         }
         val scanner = bluetoothAdapter?.bluetoothLeScanner ?: return
         val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
-        try { scanner.startScan(null, settings, scanCallback) } catch(e: SecurityException) { }
+        try { 
+            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                scanner.startScan(null, settings, scanCallback) 
+            }
+        } catch(e: SecurityException) { Log.e("GameFragment", "Scan error", e) }
     }
 
     override fun onResume() {
@@ -279,13 +292,13 @@ class GameFragment : Fragment() {
         bleStatusJob = lifecycleScope.launch {
             while(isActive) {
                 activity?.runOnUiThread { updateStatusUI() }
-                delay(1000) // UI e Ponto Vermelho atualizam de 1 em 1 seg
+                delay(1000)
             }
         }
         apiScanJob = lifecycleScope.launch {
             while(isActive) { 
                 sendScanToServer()
-                delay(1000) // Pedido ao servidor de 1 em 1 seg para máxima precisão
+                delay(1000)
             }
         }
     }
@@ -323,7 +336,11 @@ class GameFragment : Fragment() {
         super.onPause()
         requireActivity().requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         fusedLocationClient.removeLocationUpdates(locationCallback)
-        try { bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback) } catch (e: Exception) { }
+        try { 
+            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback) 
+            }
+        } catch (e: Exception) { }
         rosterRefreshJob?.cancel(); bleStatusJob?.cancel(); apiScanJob?.cancel()
     }
 

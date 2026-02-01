@@ -7,17 +7,33 @@
     android:background="@color/app_background"
     tools:context=".GameFragment">
 
-    <!-- Map taking up the left portion of the screen -->
-    <ImageView
-        android:id="@+id/map_image_view"
+    <!-- Map Container to overlay the dot -->
+    <FrameLayout
+        android:id="@+id/map_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_margin="16dp"
-        android:scaleType="fitCenter"
         app:layout_constraintBottom_toTopOf="@+id/ble_status_text_view"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.70" />
+        app:layout_constraintWidth_percent="0.70">
+
+        <ImageView
+            android:id="@+id/map_image_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter" />
+
+        <!-- User Position Dot -->
+        <View
+            android:id="@+id/user_dot"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:background="@android:color/holo_red_dark"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+    </FrameLayout>
 
     <!-- BLE Detection Status Line -->
     <TextView
@@ -31,7 +47,7 @@
         android:text="BLE 1: -- | BLE 2: --"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="@id/map_image_view" />
+        app:layout_constraintEnd_toEndOf="@id/map_container" />
 
     <!-- Loader for the map -->
     <ProgressBar
@@ -41,10 +57,10 @@
         android:layout_height="wrap_content"
         android:visibility="gone"
         tools:visibility="visible"
-        app:layout_constraintTop_toTopOf="@id/map_image_view"
-        app:layout_constraintBottom_toBottomOf="@id/map_image_view"
-        app:layout_constraintStart_toStartOf="@id/map_image_view"
-        app:layout_constraintEnd_toEndOf="@id/map_image_view" />
+        app:layout_constraintTop_toTopOf="@id/map_container"
+        app:layout_constraintBottom_toBottomOf="@id/map_container"
+        app:layout_constraintStart_toStartOf="@id/map_container"
+        app:layout_constraintEnd_toEndOf="@id/map_container" />
 
     <!-- Right side panel -->
     <LinearLayout
@@ -57,7 +73,7 @@
         android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/map_image_view"
+        app:layout_constraintStart_toEndOf="@id/map_container"
         app:layout_constraintTop_toTopOf="parent">
 
         <TextView
