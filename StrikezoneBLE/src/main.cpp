@@ -4,11 +4,11 @@
 // IDs configuráveis
 static const uint8_t  ARENA_ID  = 1;
 static const uint8_t  FLOOR_ID  = 0;
-static const uint8_t  ZONE_ID   = 1;
-static const uint16_t BEACON_ID = 1;
+static const uint8_t  ZONE_ID   = 0;
+static const uint16_t BEACON_ID = 2;
 
-static const char* DEVICE_NAME = "SZ-A1-Z1-B1";
-static const char* SERVICE_UUID_STR = "12345678-1234-5678-1234-56789abcdef0";
+static const char* DEVICE_NAME = "SZ-A0-Z0-B2";
+static const char* SERVICE_UUID_STR = "3b7e6a91-42f8-4d2b-9c51-8e0a6f3d1c27";
 
 static const esp_power_level_t TX_POWER = ESP_PWR_LVL_P9;
 
