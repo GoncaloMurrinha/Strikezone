@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.graphics.RectF
 import android.os.Build
 import android.os.Bundle
@@ -50,7 +51,7 @@ class GameFragment : Fragment() {
     private var apiScanJob: Job? = null
 
     private val bluetoothAdapter: BluetoothAdapter? by lazy {
-        val manager = requireActivity().getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+        val manager = context?.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
         manager?.adapter
     }
 
@@ -77,10 +78,8 @@ class GameFragment : Fragment() {
 
     private val bluetoothEnableLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (bluetoothAdapter?.isEnabled == true) {
-            startBleScan()
-        }
+    ) { _ ->
+        if (bluetoothAdapter?.isEnabled == true) startBleScan()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -95,9 +94,10 @@ class GameFragment : Fragment() {
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
-                if (_binding == null) return
-                locationResult.lastLocation?.let {
-                    binding.coordinatesTextView.text = "Lat: %.6f\nLon: %.6f".format(it.latitude, it.longitude)
+                _binding?.let { b ->
+                    locationResult.lastLocation?.let {
+                        b.coordinatesTextView.text = "Lat: %.6f\nLon: %.6f".format(it.latitude, it.longitude)
+                    }
                 }
             }
         }
@@ -112,116 +112,96 @@ class GameFragment : Fragment() {
         isMapLoading = true
         binding.mapLoader.isVisible = true
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val response = RetrofitInstance.api.getMaps(args.matchId)
                 if (response.isSuccessful && response.body()?.ok == true) {
                     val mapForFloor = response.body()?.maps?.firstOrNull { it.floor == floor }
-                    if (_binding != null && mapForFloor != null) {
-                        currentMapWidth = mapForFloor.width ?: 0.0
-                        currentMapHeight = mapForFloor.height ?: 0.0
-                        currentBeacons = mapForFloor.beacons ?: emptyList()
+                    _binding?.let { b ->
+                        if (mapForFloor != null) {
+                            currentMapWidth = mapForFloor.width ?: 0.0
+                            currentMapHeight = mapForFloor.height ?: 0.0
+                            currentBeacons = mapForFloor.beacons ?: emptyList()
 
-                        val url = mapForFloor.mapUrl.replace("http://central-app.local", RetrofitInstance.BASE_URL.removeSuffix("/"))
-                        Glide.with(this@GameFragment).load(url).into(binding.mapImageView)
-                        displayedFloor = floor.toString()
+                            val url = mapForFloor.mapUrl.replace("http://central-app.local", RetrofitInstance.BASE_URL.removeSuffix("/"))
+                            Glide.with(this@GameFragment).load(url).into(b.mapImageView)
+                            displayedFloor = floor.toString()
+                        }
                     }
                 }
             } catch (e: Exception) { Log.e("GameFragment", "Map error", e) }
             finally {
-                isMapLoading = false
-                _binding?.mapLoader?.isVisible = false
+                _binding?.let { 
+                    isMapLoading = false
+                    it.mapLoader.isVisible = false 
+                }
             }
         }
     }
 
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) return
-            }
+            val ctx = context ?: return
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && 
+                ActivityCompat.checkSelfPermission(ctx, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) return
             
-            val deviceName = result.device.name ?: result.scanRecord?.deviceName
+            val deviceName = try { result.device.name ?: result.scanRecord?.deviceName } catch (e: SecurityException) { null }
             val uuids = result.scanRecord?.serviceUuids?.map { it.uuid.toString().lowercase() } ?: emptyList()
             val now = System.currentTimeMillis()
             val rssi = result.rssi
 
             if ((deviceName != null && deviceName.endsWith("B0")) || uuids.contains(uuidFloor0.lowercase())) {
-                ble1Active = true
-                ble1LastSeen = now
-                ble1Rssi = rssi
+                ble1Active = true ; ble1LastSeen = now ; ble1Rssi = rssi
                 if (rssi > -50) currentFloor = "0"
             }
             else if ((deviceName != null && deviceName.endsWith("B1")) || uuids.contains(uuidFloor1.lowercase())) {
-                ble2Active = true
-                ble2LastSeen = now
-                ble2Rssi = rssi
+                ble2Active = true ; ble2LastSeen = now ; ble2Rssi = rssi
                 if (rssi > -50) currentFloor = "1"
             }
         }
     }
 
     private fun updateStatusUI() {
-        if (_binding == null) return
+        val b = _binding ?: return
         val now = System.currentTimeMillis()
 
         if (now - ble1LastSeen > 8000) { ble1Active = false; ble1Rssi = -100 }
         if (now - ble2LastSeen > 8000) { ble2Active = false; ble2Rssi = -100 }
 
-        val status1 = if (ble1Active) "${ble1Rssi}dBm" else "--"
-        val status2 = if (ble2Active) "${ble2Rssi}dBm" else "--"
-
-        binding.bleStatusTextView.text = "B0: $status1 | B1: $status2"
-        binding.floorTextView.text = "Andar: $currentFloor"
+        b.bleStatusTextView.text = "B0: ${if (ble1Active) "$ble1Rssi dBm" else "--"} | B1: ${if (ble2Active) "$ble2Rssi dBm" else "--"}"
+        b.floorTextView.text = "Andar: $currentFloor"
 
         if (currentFloor != "--" && currentFloor != displayedFloor && !isMapLoading) {
             loadMap(currentFloor.toInt())
         }
-        
         updateUserDotPosition()
     }
 
     private fun updateUserDotPosition() {
-        if (_binding == null || currentMapWidth <= 0 || currentMapHeight <= 0) {
-            binding.userDot.isVisible = false
-            return
+        val b = _binding ?: return
+        if (currentMapWidth <= 0 || currentMapHeight <= 0) {
+            b.userDot.isVisible = false ; return
         }
 
         val activeBeaconsOnMap = mutableListOf<Pair<BeaconInfo, Int>>()
-        if (ble1Active) {
-            currentBeacons.find { it.uuid.equals(uuidFloor0, ignoreCase = true) }?.let { activeBeaconsOnMap.add(it to ble1Rssi) }
-        }
-        if (ble2Active) {
-            currentBeacons.find { it.uuid.equals(uuidFloor1, ignoreCase = true) }?.let { activeBeaconsOnMap.add(it to ble2Rssi) }
-        }
+        if (ble1Active) currentBeacons.find { it.uuid.equals(uuidFloor0, ignoreCase = true) }?.let { activeBeaconsOnMap.add(it to ble1Rssi) }
+        if (ble2Active) currentBeacons.find { it.uuid.equals(uuidFloor1, ignoreCase = true) }?.let { activeBeaconsOnMap.add(it to ble2Rssi) }
 
-        if (activeBeaconsOnMap.isEmpty()) {
-            binding.userDot.isVisible = false
-            return
-        }
+        if (activeBeaconsOnMap.isEmpty()) { b.userDot.isVisible = false ; return }
 
-        var totalWeight = 0.0
-        var weightedX = 0.0
-        var weightedY = 0.0
-
+        var totalWeight = 0.0 ; var weightedX = 0.0 ; var weightedY = 0.0
         activeBeaconsOnMap.forEach { (beacon, rssi) ->
-            val weight = (rssi + 100).toDouble().pow(2) 
-            weightedX += beacon.x * weight
-            weightedY += beacon.y * weight
-            totalWeight += weight
+            val weight = (rssi + 100).toDouble().coerceAtLeast(1.0).pow(2) 
+            weightedX += beacon.x * weight ; weightedY += beacon.y * weight ; totalWeight += weight
         }
 
-        val posX = weightedX / totalWeight
-        val posY = weightedY / totalWeight
-
-        val imageRect = getImageBounds(binding.mapImageView)
+        val imageRect = getImageBounds(b.mapImageView)
         if (imageRect.width() > 0) {
-            val pixelX = imageRect.left + (posX / currentMapWidth * imageRect.width())
-            val pixelY = imageRect.top + (posY / currentMapHeight * imageRect.height())
-
-            binding.userDot.x = pixelX.toFloat() - (binding.userDot.width / 2)
-            binding.userDot.y = pixelY.toFloat() - (binding.userDot.height / 2)
-            binding.userDot.isVisible = true
+            val pixelX = imageRect.left + ((weightedX / totalWeight) / currentMapWidth * imageRect.width())
+            val pixelY = imageRect.top + ((weightedY / totalWeight) / currentMapHeight * imageRect.height())
+            b.userDot.x = pixelX.toFloat() - (b.userDot.width / 2)
+            b.userDot.y = pixelY.toFloat() - (b.userDot.height / 2)
+            b.userDot.isVisible = true
         }
     }
 
@@ -243,77 +223,55 @@ class GameFragment : Fragment() {
         if (ble2Active) readings.add(ScanReading(uuidFloor1, 0, 0, ble2Rssi))
 
         try {
-            val request = ScanRequest(
-                match_id = args.matchId,
-                team_id = if (args.team == "A") 1 else 2,
-                player_id = args.playerId,
-                arena_id = 1,
-                last_floor = if (currentFloor == "--") 0 else currentFloor.toInt(),
-                readings = readings
-            )
+            val request = ScanRequest(args.matchId, if (args.team == "A") 1 else 2, args.playerId, 1, 
+                if (currentFloor == "--") 0 else currentFloor.toInt(), readings)
             RetrofitInstance.api.sendScan("Bearer ${args.token}", request)
-        } catch (e: Exception) { Log.e("GameFragment", "Send scan error", e) }
+        } catch (e: Exception) { Log.e("GameFragment", "Send scan error") }
     }
 
     private fun startLocationUpdates() {
-        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 10000).build()
         try { 
-            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 10000).build()
                 fusedLocationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper()) 
             }
-        } catch (e: SecurityException) { Log.e("GameFragment", "Location error", e) }
+        } catch (e: Exception) { }
     }
 
     private fun startBleScan() {
-        if (bluetoothAdapter == null) return
-        if (bluetoothAdapter?.isEnabled == false) {
-            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            bluetoothEnableLauncher.launch(enableBtIntent)
-            return
+        val adapter = bluetoothAdapter ?: return
+        if (!adapter.isEnabled) {
+            bluetoothEnableLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)) ; return
         }
-        val scanner = bluetoothAdapter?.bluetoothLeScanner ?: return
-        val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+        val scanner = adapter.bluetoothLeScanner ?: return
         try { 
-            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                scanner.startScan(null, settings, scanCallback) 
-            }
-        } catch(e: SecurityException) { Log.e("GameFragment", "Scan error", e) }
+            val canScan = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+            } else true
+            if (canScan) scanner.startScan(null, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(), scanCallback) 
+        } catch(e: Exception) { }
     }
 
     override fun onResume() {
         super.onResume()
-        requireActivity().requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         checkPermissionsAndStartServices()
         if (displayedFloor == "") loadMap(0)
-
-        rosterRefreshJob = lifecycleScope.launch {
-            while(isActive) { loadTeamRoster(); delay(8000) }
-        }
-        bleStatusJob = lifecycleScope.launch {
-            while(isActive) {
-                activity?.runOnUiThread { updateStatusUI() }
-                delay(1000)
-            }
-        }
-        apiScanJob = lifecycleScope.launch {
-            while(isActive) { 
-                sendScanToServer()
-                delay(1000)
-            }
-        }
+        rosterRefreshJob = viewLifecycleOwner.lifecycleScope.launch { while(isActive) { loadTeamRoster(); delay(8000) } }
+        bleStatusJob = viewLifecycleOwner.lifecycleScope.launch { while(isActive) { updateStatusUI(); delay(1000) } }
+        apiScanJob = viewLifecycleOwner.lifecycleScope.launch { while(isActive) { sendScanToServer(); delay(1000) } }
     }
 
     private suspend fun loadTeamRoster() {
-        if (_binding == null) return
         try {
             val response = RetrofitInstance.api.getTeamRoster("Bearer ${args.token}", args.matchId, args.team)
-            if (_binding != null && response.isSuccessful) {
-                binding.playerListContainer.removeAllViews()
-                response.body()?.players?.forEach { player ->
-                    val tv = TextView(requireContext()).apply {
-                        text = "- ${player.name}"; setTextColor(ContextCompat.getColor(context, R.color.text_hint)); textSize = 16f
+            _binding?.let { b ->
+                if (response.isSuccessful) {
+                    b.playerListContainer.removeAllViews()
+                    response.body()?.players?.forEach { p ->
+                        val tv = TextView(context).apply { text = "- ${p.name}"; setTextColor(Color.WHITE); textSize = 16f }
+                        b.playerListContainer.addView(tv)
                     }
-                    binding.playerListContainer.addView(tv)
                 }
             }
         } catch (e: Exception) { }
@@ -321,26 +279,17 @@ class GameFragment : Fragment() {
 
     private fun checkPermissionsAndStartServices() {
         val perms = mutableListOf(Manifest.permission.ACCESS_FINE_LOCATION)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            perms.add(Manifest.permission.BLUETOOTH_SCAN)
-            perms.add(Manifest.permission.BLUETOOTH_CONNECT)
-        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { perms.add(Manifest.permission.BLUETOOTH_SCAN); perms.add(Manifest.permission.BLUETOOTH_CONNECT) }
         if (perms.any { ContextCompat.checkSelfPermission(requireContext(), it) != PackageManager.PERMISSION_GRANTED }) {
             permissionsLauncher.launch(perms.toTypedArray())
-        } else {
-            startLocationUpdates(); startBleScan()
-        }
+        } else { startLocationUpdates(); startBleScan() }
     }
 
     override fun onPause() {
         super.onPause()
-        requireActivity().requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         fusedLocationClient.removeLocationUpdates(locationCallback)
-        try { 
-            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback) 
-            }
-        } catch (e: Exception) { }
+        try { bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback) } catch (e: Exception) { }
         rosterRefreshJob?.cancel(); bleStatusJob?.cancel(); apiScanJob?.cancel()
     }
 
