@@ -933,3 +933,15 @@
 [Tue Feb  3 18:39:34 2026] 127.0.0.1:61313 Accepted
 [Tue Feb  3 18:40:04 2026] 127.0.0.1:61313 [200]: GET /stream_match.php?match_id=5 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
 [Tue Feb  3 18:40:04 2026] 127.0.0.1:61313 Closing
+[Thu Feb  5 23:35:54 2026] 127.0.0.1:57112 Accepted
+[Thu Feb  5 23:36:24 2026] 127.0.0.1:57112 [200]: GET /stream_match.php?match_id=5 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Feb  5 23:36:24 2026] 127.0.0.1:57112 Closing
+[Thu Feb  5 23:43:39 2026] 127.0.0.1:57299 Accepted
+[Thu Feb  5 23:44:09 2026] 127.0.0.1:57299 [200]: GET /stream_match.php?match_id=5 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Feb  5 23:44:09 2026] 127.0.0.1:57299 Closing
+[Thu Feb  5 23:56:30 2026] 127.0.0.1:57649 Accepted
+[Thu Feb  5 23:57:00 2026] 127.0.0.1:57649 [200]: GET /stream_match.php?match_id=5 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Feb  5 23:57:00 2026] 127.0.0.1:57649 Closing
+[Thu Feb  5 23:57:03 2026] 127.0.0.1:57663 Accepted
+[Thu Feb  5 23:57:33 2026] 127.0.0.1:57663 [200]: GET /stream_match.php?match_id=5 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Feb  5 23:57:33 2026] 127.0.0.1:57663 Closing
