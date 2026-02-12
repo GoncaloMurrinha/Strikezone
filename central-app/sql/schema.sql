@@ -96,7 +96,9 @@ CREATE TABLE IF NOT EXISTS player_state (
   player_id INT PRIMARY KEY,
   last_floor INT NULL,
   last_change_at TIMESTAMP NULL,
-  avg_rssi FLOAT NULL
+  avg_rssi FLOAT NULL,
+  x DOUBLE NULL,
+  y DOUBLE NULL
 ) ENGINE=InnoDB;
 
 -- Tabela lógica players (um player “app” por user+team)

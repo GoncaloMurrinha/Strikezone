@@ -687,6 +687,33 @@ if ($uri==='/owner/beacons') {
     return (float)$v;
   };
 
+  if ($method==='POST' && isset($_POST['delete_beacon'])) {
+    $arenaId = (int)($_POST['arena_id'] ?? 0);
+    $uuid = strtolower(trim((string)($_POST['uuid'] ?? '')));
+    $major = (int)($_POST['major'] ?? 0);
+    $minor = (int)($_POST['minor'] ?? 0);
+    try {
+      if ($arenaId<=0) {
+        throw new RuntimeException('Campo inválido.');
+      }
+      if ($uuid === '') {
+        throw new RuntimeException('UUID inválido.');
+      }
+      $thisArena = null;
+      foreach ($repo->listArenasByOwner($ownerId) as $a) {
+        if ((int)$a['id']===$arenaId) { $thisArena=$a; break; }
+      }
+      if (!$thisArena) {
+        throw new RuntimeException('Não tens acesso a esse campo.');
+      }
+      $repo->deleteBeacon($arenaId, $uuid, $major, $minor);
+      $_SESSION['owner_beacons_flash'] = ['type'=>'success','msg'=>'Beacon removido.'];
+    } catch (Throwable $ex) {
+      $_SESSION['owner_beacons_flash'] = ['type'=>'error','msg'=>$ex->getMessage()];
+    }
+    header('Location: /owner/beacons'); exit;
+  }
+
   if ($method==='POST' && isset($_POST['upsert_beacon'])) {
     $arenaId = (int)($_POST['arena_id'] ?? 0);
     $floor = (int)($_POST['floor'] ?? 0);
@@ -854,14 +881,25 @@ if ($uri==='/owner/beacons') {
     foreach ($beaconsByArena as $aid => $bundle) {
       $aName = htmlspecialchars($bundle['name']);
       echo "<h3>$aName</h3>";
-      echo "<table class='table'><thead><tr><th>Piso</th><th>UUID</th><th>X</th><th>Y</th><th>Etiqueta</th></tr></thead><tbody>";
+      echo "<table class='table'><thead><tr><th>Piso</th><th>UUID</th><th>X</th><th>Y</th><th>Etiqueta</th><th>Ações</th></tr></thead><tbody>";
       foreach ($bundle['rows'] as $row) {
         $floor = (int)$row['floor'];
         $uuid = htmlspecialchars($row['uuid']);
+        $major = (int)$row['major'];
+        $minor = (int)$row['minor'];
         $xVal = $row['x'] !== null ? htmlspecialchars((string)$row['x']) : '—';
         $yVal = $row['y'] !== null ? htmlspecialchars((string)$row['y']) : '—';
         $label = $row['label'] ? htmlspecialchars($row['label']) : '—';
-        echo "<tr><td>$floor</td><td>$uuid</td><td>$xVal</td><td>$yVal</td><td>$label</td></tr>";
+        echo "<tr><td>$floor</td><td>$uuid</td><td>$xVal</td><td>$yVal</td><td>$label</td><td>
+          <form method='post' style='display:inline' onsubmit=\"return confirm('Remover este beacon?');\">
+            <input type='hidden' name='delete_beacon' value='1'>
+            <input type='hidden' name='arena_id' value='".(int)$aid."'>
+            <input type='hidden' name='uuid' value='$uuid'>
+            <input type='hidden' name='major' value='$major'>
+            <input type='hidden' name='minor' value='$minor'>
+            <button type='submit' class='btn btn-danger' style='padding:0.45rem 0.9rem; font-size:0.85rem;'>Remover</button>
+          </form>
+        </td></tr>";
       }
       echo "</tbody></table>";
     }

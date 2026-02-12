@@ -322,9 +322,16 @@ final class ApiController {
     $teamPlayers = [];
     foreach ($members as $mbr) {
       if ($mbr['side'] !== $side) continue;
+      $teamId = $matchId*10 + ($side==='A'?1:2);
+      $playerId = $this->repo->ensurePlayer((int)$mbr['user_id'], $teamId);
+      $st = $this->repo->getPlayerState($playerId);
       $teamPlayers[] = [
+        'id'=>$playerId,
         'user_id'=>(int)$mbr['user_id'],
         'name'=>$mbr['display_name'],
+        'x'=>$st['x'] !== null ? (float)$st['x'] : null,
+        'y'=>$st['y'] !== null ? (float)$st['y'] : null,
+        'floor'=>$st['last_floor']!==null ? (int)$st['last_floor'] : null,
       ];
     }
     json_out(['ok'=>true,'match_id'=>$matchId,'side'=>$side,'players'=>$teamPlayers]);
@@ -385,6 +392,8 @@ final class ApiController {
     $arenaId = (int)($in['arena_id'] ?? 0);
     $reads   = (array)($in['readings'] ?? []);
     $lastFloor = isset($in['last_floor']) ? (int)$in['last_floor'] : null;
+    $x = array_key_exists('x', $in) && $in['x'] !== null ? (float)$in['x'] : null;
+    $y = array_key_exists('y', $in) && $in['y'] !== null ? (float)$in['y'] : null;
 
     if ($matchId<=0 || $teamId<=0 || $playerId<=0 || $arenaId<=0 || !$reads) {
       json_out(['error'=>'invalid_input'],422); return;
@@ -425,7 +434,7 @@ final class ApiController {
     $avgRssi = $rssiCnt ? ($rssiSum/$rssiCnt) : -80;
 
     // Persistência e estado
-    $this->repo->setPlayerState($playerId, $floor, $avgRssi);
+    $this->repo->setPlayerState($playerId, $floor, $avgRssi, $x, $y);
     $this->repo->insertScan($matchId,$teamId,$playerId,$floor,$mapped);
 
     // Broadcasting (team + match)

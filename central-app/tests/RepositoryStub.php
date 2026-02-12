@@ -41,7 +41,7 @@ if (!class_exists('Repository')) {
     public function addMemberToMatch(int $matchId, int $userId, string $side): void {}
     public function ensurePlayer(int $userId, int $teamId): int { return 0; }
     public function getBeaconFloorsMap(int $arenaId): array { return []; }
-    public function setPlayerState(int $playerId, int $floor, float $avgRssi): void {}
+    public function setPlayerState(int $playerId, int $floor, float $avgRssi, ?float $x = null, ?float $y = null): void {}
     public function insertScan(int $matchId,int $teamId,int $playerId,int $floor,array $payload): void {}
   }
 }

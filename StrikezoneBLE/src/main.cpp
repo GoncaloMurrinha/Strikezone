@@ -7,8 +7,8 @@ static const uint8_t  FLOOR_ID  = 0;
 static const uint8_t  ZONE_ID   = 0;
 static const uint16_t BEACON_ID = 2;
 
-static const char* DEVICE_NAME = "SZ-A0-Z0-B2";
-static const char* SERVICE_UUID_STR = "3b7e6a91-42f8-4d2b-9c51-8e0a6f3d1c27";
+static const char* DEVICE_NAME = "SZ-A0-Z0-B1";
+static const char* SERVICE_UUID_STR = "9F3C2D58-7A1B-4E6F-8C12-6B7D4A0F91E3";
 
 static const esp_power_level_t TX_POWER = ESP_PWR_LVL_P9;
 
@@ -53,14 +53,16 @@ void setup() {
 
     NimBLEAdvertisementData adData;
     adData.setFlags(0x06);
-    adData.addServiceUUID(NimBLEUUID(SERVICE_UUID_STR));
+    // Coloca o nome no pacote principal (AD) para aparecer sem scan response.
+    adData.setName(DEVICE_NAME);
     adData.setManufacturerData(buildManufacturerData());
 
     adv->setAdvertisementData(adData);
 
-    // IMPORTANTE: linha correta para NÃO usar scan response
-    NimBLEAdvertisementData empty;
-    adv->setScanResponseData(empty);
+    // Move o UUID do serviço para o scan response para caber no tamanho máximo do AD (31 bytes).
+    NimBLEAdvertisementData scanResponse;
+    scanResponse.addServiceUUID(NimBLEUUID(SERVICE_UUID_STR));
+    adv->setScanResponseData(scanResponse);
 
     adv->setMinInterval(160);
     adv->setMaxInterval(320);

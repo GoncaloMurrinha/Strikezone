@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 final class Repository {
   private bool $locationsReady = false;
+  private bool $playerStateReady = false;
   public function __construct(private PDO $pdo) {}
 
   // ----- USERS -----
@@ -78,6 +79,10 @@ final class Repository {
     $st = $this->pdo->prepare('SELECT * FROM beacons WHERE arena_id=?');
     $st->execute([$arenaId]); return $st->fetchAll();
   }
+  public function deleteBeacon(int $arenaId, string $uuid, int $major, int $minor): void {
+    $st = $this->pdo->prepare('DELETE FROM beacons WHERE arena_id=? AND uuid=? AND major=? AND minor=?');
+    $st->execute([$arenaId,$uuid,$major,$minor]);
+  }
   public function getBeaconFloorsMap(int $arenaId): array {
     $rows = $this->findBeaconsByArena($arenaId);
     $map = [];
@@ -141,18 +146,62 @@ final class Repository {
     $st->execute([$userId,$teamId]); return (int)$this->pdo->lastInsertId();
   }
   public function getPlayerState(int $playerId): array {
+    $this->ensurePlayerStateTable();
+    $this->ensurePlayerStatePositionColumns();
     $st = $this->pdo->prepare('SELECT * FROM player_state WHERE player_id=?');
     $st->execute([$playerId]);
     $row = $st->fetch();
-    return $row ?: ['player_id'=>$playerId,'last_floor'=>null,'last_change_at'=>null,'avg_rssi'=>null];
+    return $row ?: [
+      'player_id'=>$playerId,
+      'last_floor'=>null,
+      'last_change_at'=>null,
+      'avg_rssi'=>null,
+      'x'=>null,
+      'y'=>null
+    ];
   }
-  public function setPlayerState(int $playerId, int $floor, float $avgRssi): void {
+  public function setPlayerState(int $playerId, int $floor, float $avgRssi, ?float $x = null, ?float $y = null): void {
+    $this->ensurePlayerStateTable();
+    $this->ensurePlayerStatePositionColumns();
     $st = $this->pdo->prepare('
-      INSERT INTO player_state (player_id,last_floor,last_change_at,avg_rssi)
-      VALUES (?,?,NOW(),?)
-      ON DUPLICATE KEY UPDATE last_floor=VALUES(last_floor), last_change_at=VALUES(last_change_at), avg_rssi=VALUES(avg_rssi)
+      INSERT INTO player_state (player_id,last_floor,last_change_at,avg_rssi,x,y)
+      VALUES (?,?,NOW(),?,?,?)
+      ON DUPLICATE KEY UPDATE
+        last_floor=VALUES(last_floor),
+        last_change_at=VALUES(last_change_at),
+        avg_rssi=VALUES(avg_rssi),
+        x=VALUES(x),
+        y=VALUES(y)
     ');
-    $st->execute([$playerId,$floor,$avgRssi]);
+    $st->execute([$playerId,$floor,$avgRssi,$x,$y]);
+  }
+
+  private function ensurePlayerStateTable(): void {
+    if ($this->playerStateReady) return;
+    $this->pdo->exec('
+      CREATE TABLE IF NOT EXISTS player_state (
+        player_id INT PRIMARY KEY,
+        last_floor INT NULL,
+        last_change_at TIMESTAMP NULL,
+        avg_rssi FLOAT NULL
+      ) ENGINE=InnoDB
+    ');
+    $this->playerStateReady = true;
+  }
+  private function ensurePlayerStatePositionColumns(): void {
+    $cols = [];
+    $st = $this->pdo->query('SHOW COLUMNS FROM player_state');
+    if ($st) {
+      foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $cols[strtolower((string)($row['Field'] ?? ''))] = true;
+      }
+    }
+    if (!isset($cols['x'])) {
+      $this->pdo->exec('ALTER TABLE player_state ADD COLUMN x DOUBLE NULL');
+    }
+    if (!isset($cols['y'])) {
+      $this->pdo->exec('ALTER TABLE player_state ADD COLUMN y DOUBLE NULL');
+    }
   }
 
   // ----- SCANS -----

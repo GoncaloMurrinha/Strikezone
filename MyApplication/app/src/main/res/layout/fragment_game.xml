@@ -7,7 +7,7 @@
     android:background="@color/app_background"
     tools:context=".GameFragment">
 
-    <!-- Map Container to overlay the dot -->
+    <!-- Map Container -->
     <FrameLayout
         android:id="@+id/map_container"
         android:layout_width="0dp"
@@ -24,18 +24,24 @@
             android:layout_height="match_parent"
             android:scaleType="fitCenter" />
 
-        <!-- User Position Dot -->
+        <!-- Container para os outros jogadores -->
+        <FrameLayout
+            android:id="@+id/players_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- O Teu Ponto (Vermelho - Tempo Real) -->
         <View
             android:id="@+id/user_dot"
-            android:layout_width="12dp"
-            android:layout_height="12dp"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
             android:background="@android:color/holo_red_dark"
             android:visibility="gone"
             tools:visibility="visible" />
 
     </FrameLayout>
 
-    <!-- BLE Detection Status Line -->
+    <!-- Sinal dos Beacons -->
     <TextView
         android:id="@+id/ble_status_text_view"
         android:layout_width="0dp"
@@ -43,26 +49,25 @@
         android:layout_marginStart="16dp"
         android:layout_marginBottom="8dp"
         android:textColor="@color/white"
-        android:textSize="14sp"
-        android:text="BLE 1: -- | BLE 2: --"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:text="Sinal: --"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="@id/map_container" />
 
-    <!-- Loader for the map -->
     <ProgressBar
         android:id="@+id/map_loader"
         style="?android:attr/progressBarStyle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        tools:visibility="visible"
         app:layout_constraintTop_toTopOf="@id/map_container"
         app:layout_constraintBottom_toBottomOf="@id/map_container"
         app:layout_constraintStart_toStartOf="@id/map_container"
         app:layout_constraintEnd_toEndOf="@id/map_container" />
 
-    <!-- Right side panel -->
+    <!-- Painel Lateral -->
     <LinearLayout
         android:id="@+id/side_panel"
         android:layout_width="0dp"
@@ -83,16 +88,7 @@
             android:textColor="@color/white"
             android:textSize="20sp"
             android:textStyle="bold"
-            tools:text="Contra Terrorista" />
-        
-        <TextView
-            android:id="@+id/floor_text_view"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textColor="@color/white"
-            android:textSize="18sp"
-            tools:text="Andar: --" />
+            tools:text="Equipa" />
 
         <ScrollView
             android:layout_width="match_parent"
@@ -105,17 +101,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
         </ScrollView>
-
-        <TextView
-            android:id="@+id/coordinates_text_view"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginBottom="8dp"
-            android:textAlignment="textEnd"
-            android:textColor="@color/text_hint"
-            android:textSize="12sp"
-            tools:text="Lat: ...\nLon: ..." />
 
         <ImageView
             android:id="@+id/logo_bottom_image"

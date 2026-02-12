@@ -10,8 +10,8 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitInstance {
     
-    // IP do servidor atualizado para a gama 192.168
-    private const val SERVER_IP = "192.168.100.165"
+    // IP do servidor atualizado conforme fornecido
+    private const val SERVER_IP = "192.168.1.74"
     private const val BASE_URL_STRING = "http://$SERVER_IP:8080/"
 
     val api: ApiService by lazy {
