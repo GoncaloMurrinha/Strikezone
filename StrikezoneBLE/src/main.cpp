@@ -5,10 +5,10 @@
 static const uint8_t  ARENA_ID  = 1;
 static const uint8_t  FLOOR_ID  = 0;
 static const uint8_t  ZONE_ID   = 0;
-static const uint16_t BEACON_ID = 2;
+static const uint16_t BEACON_ID = 1;
 
 static const char* DEVICE_NAME = "SZ-A0-Z0-B1";
-static const char* SERVICE_UUID_STR = "9F3C2D58-7A1B-4E6F-8C12-6B7D4A0F91E3";
+static const char* SERVICE_UUID_STR = "5D8A1F2E-9C44-4B7E-A3F1-0E6C92D8B7AF";
 
 static const esp_power_level_t TX_POWER = ESP_PWR_LVL_P9;
 

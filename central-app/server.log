@@ -3521,3 +3521,22 @@
 [Thu Feb 12 09:59:49 2026] 127.0.0.1:51240 Closing
 [Thu Feb 12 09:59:49 2026] 127.0.0.1:51241 [200]: GET /assets/Taticas.png
 [Thu Feb 12 09:59:49 2026] 127.0.0.1:51241 Closing
+[Thu Feb 12 12:03:49 2026] 127.0.0.1:52007 Accepted
+[Thu Feb 12 12:04:19 2026] 127.0.0.1:52007 [200]: GET /stream_match.php?match_id=5 - Maximum execution time of 30 seconds exceeded in /Users/goncalomurrinha/Strikezone/central-app/src/MiniRedis.php on line 71
+[Thu Feb 12 12:04:19 2026] 127.0.0.1:52007 Closing
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54693 Accepted
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54693 Closing
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54696 Accepted
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54696 [200]: GET /assets/logo_strikezone.png
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54697 Accepted
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54697 [200]: GET /assets/FotoEquipa.jpeg
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54696 Closing
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54698 Accepted
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54698 [200]: GET /assets/BLE.jpeg
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54697 Closing
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54699 Accepted
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54698 Closing
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54700 Accepted
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54699 Closing
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54700 [200]: GET /assets/Taticas.png
+[Fri Feb 13 19:27:11 2026] 127.0.0.1:54700 Closing
