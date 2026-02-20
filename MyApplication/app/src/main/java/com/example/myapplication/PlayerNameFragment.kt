@@ -33,17 +33,17 @@ class PlayerNameFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.buttonSubmitName.setOnClickListener {
-            binding.errorText.text = "" // Clear previous errors
+            binding.errorText.text = "" 
             val playerName = binding.editTextPlayerName.text.toString().trim()
             if (playerName.isNotEmpty()) {
-                registerPlayer(playerName, args.team, args.matchId, args.token)
+                registerOrLoginPlayer(playerName, args.team, args.matchId, args.token)
             } else {
-                binding.errorText.text = "Please enter a name"
+                binding.errorText.text = "Por favor, insira um nome"
             }
         }
     }
 
-    private fun registerPlayer(name: String, team: String, matchId: Int, token: String) {
+    private fun registerOrLoginPlayer(name: String, team: String, matchId: Int, token: String) {
         (activity as? LoaderProvider)?.showLoader()
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -56,26 +56,43 @@ class PlayerNameFragment : Fragment() {
                 val response = RetrofitInstance.api.registerPlayer("Bearer $token", request)
                 val responseBody = response.body()
 
-                Log.d("PlayerNameFragment", "Registration Response: $responseBody")
-
                 if (response.isSuccessful && responseBody?.ok == true && responseBody.player_id != null) {
-                    val bundle = bundleOf(
-                        "team" to team,
-                        "match_id" to matchId,
-                        "token" to token,
-                        "player_id" to responseBody.player_id
-                    )
-                    findNavController().navigate(R.id.action_PlayerNameFragment_to_GameFragment, bundle)
+                    // Registo novo com sucesso
+                    navigateToGame(team, matchId, token, responseBody.player_id)
                 } else {
-                    binding.errorText.text = "Failed to register player: ${response.message()}"
-                    (activity as? LoaderProvider)?.hideLoader()
+                    // Se falhar (provavelmente porque o nome já existe), tentamos recuperar o ID do Roster
+                    val rosterResponse = RetrofitInstance.api.getTeamRoster("Bearer $token", matchId, team)
+                    if (rosterResponse.isSuccessful) {
+                        val existingPlayer = rosterResponse.body()?.players?.find { it.name.equals(name, ignoreCase = true) }
+                        if (existingPlayer != null && existingPlayer.id != null) {
+                            // O jogador já existia, vamos "entrar" com o ID dele
+                            navigateToGame(team, matchId, token, existingPlayer.id)
+                        } else {
+                            val errorMsg = if (!response.isSuccessful) response.message() else "Nome já em uso por outra equipa."
+                            binding.errorText.text = "Erro: $errorMsg"
+                            (activity as? LoaderProvider)?.hideLoader()
+                        }
+                    } else {
+                        binding.errorText.text = "Falha no registo e impossível recuperar jogador existente."
+                        (activity as? LoaderProvider)?.hideLoader()
+                    }
                 }
             } catch (e: Exception) {
-                Log.e("PlayerNameFragment", "Registration error", e)
-                binding.errorText.text = "Error: ${e.message}"
+                Log.e("PlayerNameFragment", "Error", e)
+                binding.errorText.text = "Erro de rede: ${e.message}"
                 (activity as? LoaderProvider)?.hideLoader()
             }
         }
+    }
+
+    private fun navigateToGame(team: String, matchId: Int, token: String, playerId: Int) {
+        val bundle = bundleOf(
+            "team" to team,
+            "match_id" to matchId,
+            "token" to token,
+            "player_id" to playerId
+        )
+        findNavController().navigate(R.id.action_PlayerNameFragment_to_GameFragment, bundle)
     }
 
     override fun onDestroyView() {

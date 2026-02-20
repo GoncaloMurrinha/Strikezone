@@ -8,7 +8,6 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Query
 
-// Step 1: Response from code validation
 data class ValidationResponse(
     val status: String?,
     val team: String?,
@@ -16,7 +15,6 @@ data class ValidationResponse(
     val token: String?
 )
 
-// Step 2: Request and Response for player registration
 data class RegisterPlayerRequest(
     val match_id: Int,
     val side: String,
@@ -27,7 +25,6 @@ data class RegisterPlayerResponse(
     val player_id: Int?
 )
 
-// Step 3: Request and Response for sending scans
 data class ScanReading(val uuid: String, val major: Int, val minor: Int, val rssi: Int)
 data class ScanRequest(
     val match_id: Int,
@@ -35,13 +32,15 @@ data class ScanRequest(
     val player_id: Int,
     val arena_id: Int,
     val last_floor: Int,
+    val x: Double?,
+    val y: Double?,
     val readings: List<ScanReading>
 )
 data class ScanResponse(val status: String)
 
-// Step 4: Response for maps
 data class BeaconInfo(
     val uuid: String,
+    val label: String?, 
     val x: Double,
     val y: Double
 )
@@ -59,13 +58,16 @@ data class MapsResponse(
     val maps: List<MapInfo>
 )
 
-// Step 5: Response for Team Roster (Corrected)
 data class PlayerInfo(
-    val name: String // Corrected from displayName
+    val id: Int?,
+    val name: String,
+    val x: Double?,
+    val y: Double?,
+    val floor: Int?
 )
 data class TeamRosterResponse(
     val ok: Boolean,
-    val players: List<PlayerInfo> // Corrected from roster
+    val players: List<PlayerInfo>
 )
 
 

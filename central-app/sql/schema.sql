@@ -106,6 +106,9 @@ CREATE TABLE IF NOT EXISTS players (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   team_id INT NOT NULL,
+  last_floor INT NULL,
+  x DOUBLE NULL,
+  y DOUBLE NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uniq_user_team (user_id, team_id),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

@@ -4,6 +4,7 @@ declare(strict_types=1);
 final class Repository {
   private bool $locationsReady = false;
   private bool $playerStateReady = false;
+  private bool $playersPositionReady = false;
   public function __construct(private PDO $pdo) {}
 
   // ----- USERS -----
@@ -83,6 +84,31 @@ final class Repository {
     $st = $this->pdo->prepare('DELETE FROM beacons WHERE arena_id=? AND uuid=? AND major=? AND minor=?');
     $st->execute([$arenaId,$uuid,$major,$minor]);
   }
+  public function updateBeacon(
+    int $arenaId,
+    string $originalUuid,
+    int $originalMajor,
+    int $originalMinor,
+    string $uuid,
+    int $major,
+    int $minor,
+    int $floor,
+    int $txPower,
+    ?string $label,
+    ?float $x,
+    ?float $y
+  ): bool {
+    $st = $this->pdo->prepare('
+      UPDATE beacons
+      SET uuid=?, major=?, minor=?, floor=?, tx_power=?, label=?, x=?, y=?
+      WHERE arena_id=? AND uuid=? AND major=? AND minor=?
+    ');
+    $st->execute([
+      $uuid,$major,$minor,$floor,$txPower,$label,$x,$y,
+      $arenaId,$originalUuid,$originalMajor,$originalMinor,
+    ]);
+    return $st->rowCount() > 0;
+  }
   public function getBeaconFloorsMap(int $arenaId): array {
     $rows = $this->findBeaconsByArena($arenaId);
     $map = [];
@@ -138,6 +164,7 @@ final class Repository {
     $st->execute([$matchId]); return $st->fetchAll();
   }
   public function ensurePlayer(int $userId, int $teamId): int {
+    $this->ensurePlayersPositionColumns();
     $st = $this->pdo->prepare('SELECT id FROM players WHERE user_id=? AND team_id=?');
     $st->execute([$userId,$teamId]);
     $row = $st->fetch();
@@ -148,10 +175,27 @@ final class Repository {
   public function getPlayerState(int $playerId): array {
     $this->ensurePlayerStateTable();
     $this->ensurePlayerStatePositionColumns();
+    $this->ensurePlayersPositionColumns();
     $st = $this->pdo->prepare('SELECT * FROM player_state WHERE player_id=?');
     $st->execute([$playerId]);
     $row = $st->fetch();
-    return $row ?: [
+    if ($row) {
+      return $row;
+    }
+    $st = $this->pdo->prepare('SELECT id AS player_id, last_floor, x, y FROM players WHERE id=?');
+    $st->execute([$playerId]);
+    $playerRow = $st->fetch();
+    if ($playerRow) {
+      return [
+        'player_id'=>(int)$playerRow['player_id'],
+        'last_floor'=>$playerRow['last_floor'] !== null ? (int)$playerRow['last_floor'] : null,
+        'last_change_at'=>null,
+        'avg_rssi'=>null,
+        'x'=>$playerRow['x'] !== null ? (float)$playerRow['x'] : null,
+        'y'=>$playerRow['y'] !== null ? (float)$playerRow['y'] : null
+      ];
+    }
+    return [
       'player_id'=>$playerId,
       'last_floor'=>null,
       'last_change_at'=>null,
@@ -163,6 +207,7 @@ final class Repository {
   public function setPlayerState(int $playerId, int $floor, float $avgRssi, ?float $x = null, ?float $y = null): void {
     $this->ensurePlayerStateTable();
     $this->ensurePlayerStatePositionColumns();
+    $this->ensurePlayersPositionColumns();
     $st = $this->pdo->prepare('
       INSERT INTO player_state (player_id,last_floor,last_change_at,avg_rssi,x,y)
       VALUES (?,?,NOW(),?,?,?)
@@ -174,6 +219,8 @@ final class Repository {
         y=VALUES(y)
     ');
     $st->execute([$playerId,$floor,$avgRssi,$x,$y]);
+    $st = $this->pdo->prepare('UPDATE players SET last_floor=?, x=?, y=? WHERE id=?');
+    $st->execute([$floor,$x,$y,$playerId]);
   }
 
   private function ensurePlayerStateTable(): void {
@@ -202,6 +249,26 @@ final class Repository {
     if (!isset($cols['y'])) {
       $this->pdo->exec('ALTER TABLE player_state ADD COLUMN y DOUBLE NULL');
     }
+  }
+  private function ensurePlayersPositionColumns(): void {
+    if ($this->playersPositionReady) return;
+    $cols = [];
+    $st = $this->pdo->query('SHOW COLUMNS FROM players');
+    if ($st) {
+      foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $cols[strtolower((string)($row['Field'] ?? ''))] = true;
+      }
+    }
+    if (!isset($cols['last_floor'])) {
+      $this->pdo->exec('ALTER TABLE players ADD COLUMN last_floor INT NULL');
+    }
+    if (!isset($cols['x'])) {
+      $this->pdo->exec('ALTER TABLE players ADD COLUMN x DOUBLE NULL');
+    }
+    if (!isset($cols['y'])) {
+      $this->pdo->exec('ALTER TABLE players ADD COLUMN y DOUBLE NULL');
+    }
+    $this->playersPositionReady = true;
   }
 
   // ----- SCANS -----

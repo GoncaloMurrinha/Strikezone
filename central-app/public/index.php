@@ -679,6 +679,11 @@ if ($uri==='/owner/beacons') {
   $ownerId = $auth->requireOwner();
   $flash = $_SESSION['owner_beacons_flash'] ?? null;
   unset($_SESSION['owner_beacons_flash']);
+  $arenas = $repo->listArenasByOwner($ownerId);
+  $ownedArenaIds = [];
+  foreach ($arenas as $arenaRow) {
+    $ownedArenaIds[(int)$arenaRow['id']] = true;
+  }
 
   $parseOptionalFloat = static function (?string $val): ?float {
     if ($val === null) return null;
@@ -699,11 +704,7 @@ if ($uri==='/owner/beacons') {
       if ($uuid === '') {
         throw new RuntimeException('UUID inválido.');
       }
-      $thisArena = null;
-      foreach ($repo->listArenasByOwner($ownerId) as $a) {
-        if ((int)$a['id']===$arenaId) { $thisArena=$a; break; }
-      }
-      if (!$thisArena) {
+      if (!isset($ownedArenaIds[$arenaId])) {
         throw new RuntimeException('Não tens acesso a esse campo.');
       }
       $repo->deleteBeacon($arenaId, $uuid, $major, $minor);
@@ -718,13 +719,17 @@ if ($uri==='/owner/beacons') {
     $arenaId = (int)($_POST['arena_id'] ?? 0);
     $floor = (int)($_POST['floor'] ?? 0);
     $uuid = strtolower(trim((string)($_POST['uuid'] ?? '')));
-    $major = 0;
-    $minor = 0;
+    $major = (int)($_POST['major'] ?? 0);
+    $minor = (int)($_POST['minor'] ?? 0);
     $txPower = -59;
     $label = trim((string)($_POST['label'] ?? ''));
     $label = $label === '' ? null : $label;
     $x = $parseOptionalFloat($_POST['x'] ?? null);
     $y = $parseOptionalFloat($_POST['y'] ?? null);
+    $isEdit = (int)($_POST['is_edit'] ?? 0) === 1;
+    $originalUuid = strtolower(trim((string)($_POST['original_uuid'] ?? '')));
+    $originalMajor = (int)($_POST['original_major'] ?? 0);
+    $originalMinor = (int)($_POST['original_minor'] ?? 0);
 
     try {
       if ($arenaId<=0) {
@@ -739,22 +744,41 @@ if ($uri==='/owner/beacons') {
       if ($x === null || $y === null) {
         throw new RuntimeException('Define as coordenadas X e Y.');
       }
-      $thisArena = null;
-      foreach ($repo->listArenasByOwner($ownerId) as $a) {
-        if ((int)$a['id']===$arenaId) { $thisArena=$a; break; }
-      }
-      if (!$thisArena) {
+      if (!isset($ownedArenaIds[$arenaId])) {
         throw new RuntimeException('Não tens acesso a esse campo.');
       }
-      $repo->upsertBeacon($arenaId, $uuid, $major, $minor, $floor, $txPower, $label, $x, $y);
-      $_SESSION['owner_beacons_flash'] = ['type'=>'success','msg'=>'Beacon guardado.'];
+      if ($isEdit) {
+        if ($originalUuid === '') {
+          throw new RuntimeException('Beacon original inválido para edição.');
+        }
+        $updated = $repo->updateBeacon(
+          $arenaId,
+          $originalUuid,
+          $originalMajor,
+          $originalMinor,
+          $uuid,
+          $major,
+          $minor,
+          $floor,
+          $txPower,
+          $label,
+          $x,
+          $y
+        );
+        if (!$updated) {
+          throw new RuntimeException('Beacon a editar não foi encontrado.');
+        }
+        $_SESSION['owner_beacons_flash'] = ['type'=>'success','msg'=>'Beacon atualizado.'];
+      } else {
+        $repo->upsertBeacon($arenaId, $uuid, $major, $minor, $floor, $txPower, $label, $x, $y);
+        $_SESSION['owner_beacons_flash'] = ['type'=>'success','msg'=>'Beacon guardado.'];
+      }
     } catch (Throwable $ex) {
       $_SESSION['owner_beacons_flash'] = ['type'=>'error','msg'=>$ex->getMessage()];
     }
     header('Location: /owner/beacons'); exit;
   }
 
-  $arenas = $repo->listArenasByOwner($ownerId);
   $mapsByArena = [];
   $beaconsByArena = [];
   foreach ($arenas as $a) {
@@ -768,8 +792,38 @@ if ($uri==='/owner/beacons') {
     }
   }
 
+  $editBeacon = null;
+  $editArenaId = (int)($_GET['edit_arena_id'] ?? 0);
+  $editUuid = strtolower(trim((string)($_GET['edit_uuid'] ?? '')));
+  $editMajor = (int)($_GET['edit_major'] ?? 0);
+  $editMinor = (int)($_GET['edit_minor'] ?? 0);
+  if ($editArenaId > 0 && $editUuid !== '' && isset($beaconsByArena[$editArenaId])) {
+    foreach ($beaconsByArena[$editArenaId]['rows'] as $row) {
+      if (
+        strtolower((string)$row['uuid']) === $editUuid
+        && (int)$row['major'] === $editMajor
+        && (int)$row['minor'] === $editMinor
+      ) {
+        $editBeacon = [
+          'arena_id' => $editArenaId,
+          'floor' => (int)$row['floor'],
+          'uuid' => (string)$row['uuid'],
+          'major' => (int)$row['major'],
+          'minor' => (int)$row['minor'],
+          'x' => $row['x'] !== null ? (string)$row['x'] : '',
+          'y' => $row['y'] !== null ? (string)$row['y'] : '',
+          'label' => $row['label'] !== null ? (string)$row['label'] : '',
+        ];
+        break;
+      }
+    }
+  }
+
   page_header("Beacons");
-  echo "<section class='card'><h2>Adicionar / Atualizar beacon</h2>";
+  $isEditMode = $editBeacon !== null;
+  $cardTitle = $isEditMode ? 'Editar beacon' : 'Adicionar / Atualizar beacon';
+  $submitText = $isEditMode ? 'Atualizar beacon' : 'Guardar beacon';
+  echo "<section class='card'><h2>$cardTitle</h2>";
   if ($flash) {
     $cls = $flash['type']==='success' ? "alert success" : "alert";
     $msg = htmlspecialchars($flash['msg'], ENT_QUOTES, 'UTF-8');
@@ -777,19 +831,43 @@ if ($uri==='/owner/beacons') {
   }
   if (!$arenas) echo "<p class='muted'>(cria primeiro um Campo)</p>";
   $mapsJson = htmlspecialchars(json_encode($mapsByArena, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
+  $selectedArenaId = $isEditMode ? (int)$editBeacon['arena_id'] : (isset($arenas[0]) ? (int)$arenas[0]['id'] : 0);
+  $floorVal = $isEditMode ? (string)$editBeacon['floor'] : '';
+  $uuidVal = $isEditMode ? (string)$editBeacon['uuid'] : '';
+  $majorVal = $isEditMode ? (string)$editBeacon['major'] : '0';
+  $minorVal = $isEditMode ? (string)$editBeacon['minor'] : '0';
+  $xVal = $isEditMode ? (string)$editBeacon['x'] : '';
+  $yVal = $isEditMode ? (string)$editBeacon['y'] : '';
+  $labelVal = $isEditMode ? (string)$editBeacon['label'] : '';
+  $cancelEdit = $isEditMode ? "<a class='btn btn-ghost' style='margin-left:0.6rem' href='/owner/beacons'>Cancelar edição</a>" : '';
+  $uuidEsc = htmlspecialchars($uuidVal, ENT_QUOTES, 'UTF-8');
+  $majorEsc = htmlspecialchars($majorVal, ENT_QUOTES, 'UTF-8');
+  $minorEsc = htmlspecialchars($minorVal, ENT_QUOTES, 'UTF-8');
+  $floorEsc = htmlspecialchars($floorVal, ENT_QUOTES, 'UTF-8');
+  $xEsc = htmlspecialchars($xVal, ENT_QUOTES, 'UTF-8');
+  $yEsc = htmlspecialchars($yVal, ENT_QUOTES, 'UTF-8');
+  $labelEsc = htmlspecialchars($labelVal, ENT_QUOTES, 'UTF-8');
   echo "<form method='post' style='max-width:680px' data-maps='$mapsJson'>
     <input type='hidden' name='upsert_beacon' value='1'>
+    <input type='hidden' name='is_edit' value='".($isEditMode ? "1" : "0")."'>
+    <input type='hidden' name='original_uuid' value='$uuidEsc'>
+    <input type='hidden' name='original_major' value='$majorEsc'>
+    <input type='hidden' name='original_minor' value='$minorEsc'>
     <div class='form-group'><label for='arena_id_beacon'>Campo</label><select id='arena_id_beacon' name='arena_id' required>";
   foreach ($arenas as $a) {
-    echo "<option value='{$a['id']}'>".htmlspecialchars($a['name'])."</option>";
+    $arenaIdOpt = (int)$a['id'];
+    $selected = $arenaIdOpt === $selectedArenaId ? " selected" : "";
+    echo "<option value='{$a['id']}'$selected>".htmlspecialchars($a['name'])."</option>";
   }
   echo "</select></div>
-    <div class='form-group'><label for='floor_beacon'>Piso</label><input id='floor_beacon' type='number' name='floor' required></div>
-    <div class='form-group'><label for='uuid'>UUID</label><input id='uuid' name='uuid' placeholder='xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' required></div>
-    <div class='form-group'><label for='x'>X (metros)</label><input id='x' type='number' step='0.01' name='x' required></div>
-    <div class='form-group'><label for='y'>Y (metros)</label><input id='y' type='number' step='0.01' name='y' required></div>
-    <div class='form-group'><label for='label'>Etiqueta (opcional)</label><input id='label' name='label' placeholder='Entrada Norte'></div>
-    <button type='submit' class='btn'>Guardar beacon</button>
+    <div class='form-group'><label for='floor_beacon'>Piso</label><input id='floor_beacon' type='number' name='floor' value='$floorEsc' required></div>
+    <div class='form-group'><label for='uuid'>UUID</label><input id='uuid' name='uuid' value='$uuidEsc' placeholder='xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' required></div>
+    <input type='hidden' name='major' value='$majorEsc'>
+    <input type='hidden' name='minor' value='$minorEsc'>
+    <div class='form-group'><label for='x'>X (metros)</label><input id='x' type='number' step='0.01' name='x' value='$xEsc' required></div>
+    <div class='form-group'><label for='y'>Y (metros)</label><input id='y' type='number' step='0.01' name='y' value='$yEsc' required></div>
+    <div class='form-group'><label for='label'>Etiqueta (opcional)</label><input id='label' name='label' value='$labelEsc' placeholder='Entrada Norte'></div>
+    <button type='submit' class='btn'>$submitText</button>$cancelEdit
   </form></section>";
 
   echo "<section class='card' style='margin-top:1.5rem;'>
@@ -881,16 +959,22 @@ if ($uri==='/owner/beacons') {
     foreach ($beaconsByArena as $aid => $bundle) {
       $aName = htmlspecialchars($bundle['name']);
       echo "<h3>$aName</h3>";
-      echo "<table class='table'><thead><tr><th>Piso</th><th>UUID</th><th>X</th><th>Y</th><th>Etiqueta</th><th>Ações</th></tr></thead><tbody>";
+      echo "<table class='table'><thead><tr><th>Piso</th><th>UUID</th><th>Major</th><th>Minor</th><th>X</th><th>Y</th><th>Etiqueta</th><th>Ações</th></tr></thead><tbody>";
       foreach ($bundle['rows'] as $row) {
         $floor = (int)$row['floor'];
-        $uuid = htmlspecialchars($row['uuid']);
+        $uuidRaw = (string)$row['uuid'];
+        $uuid = htmlspecialchars($uuidRaw);
         $major = (int)$row['major'];
         $minor = (int)$row['minor'];
         $xVal = $row['x'] !== null ? htmlspecialchars((string)$row['x']) : '—';
         $yVal = $row['y'] !== null ? htmlspecialchars((string)$row['y']) : '—';
         $label = $row['label'] ? htmlspecialchars($row['label']) : '—';
-        echo "<tr><td>$floor</td><td>$uuid</td><td>$xVal</td><td>$yVal</td><td>$label</td><td>
+        $editUrl = "/owner/beacons?edit_arena_id=".(int)$aid
+          ."&edit_uuid=".rawurlencode(strtolower($uuidRaw))
+          ."&edit_major=".$major
+          ."&edit_minor=".$minor;
+        echo "<tr><td>$floor</td><td>$uuid</td><td>$major</td><td>$minor</td><td>$xVal</td><td>$yVal</td><td>$label</td><td>
+          <a class='btn btn-ghost' style='padding:0.45rem 0.9rem; font-size:0.85rem; margin-right:0.4rem;' href='$editUrl'>Editar</a>
           <form method='post' style='display:inline' onsubmit=\"return confirm('Remover este beacon?');\">
             <input type='hidden' name='delete_beacon' value='1'>
             <input type='hidden' name='arena_id' value='".(int)$aid."'>
@@ -1092,7 +1176,7 @@ echo <<<HTML
     </section>
 
     <section id='api'>
-      <h2>API (resumo)</h2>
+      <h2>API (resumo + exemplos)</h2>
       <div class='api-card'>
         <pre>POST /api/register               {email,password,display_name}
 POST /api/login                  {email,password}
@@ -1101,10 +1185,88 @@ GET  /api/arena/list             (Bearer)
 POST /api/match/create           (Bearer)
 GET  /api/match/list?arena_id    (Bearer)
 POST /api/match/join             (Bearer)
-POST /api/match/register-player  (Bearer)
+POST /api/match/register-player  (Bearer ou Match Token)
 GET  /api/match/roster?match_id  (Bearer)
 GET  /api/maps?match_id|arena_id {maps:[{floor,map_url,width,height,beacons}]}
-POST /api/scan                   (Bearer)</pre>
+POST /api/scan                   (Bearer ou Match Token)</pre>
+      </div>
+
+      <h3>Exemplo 1: Login</h3>
+      <div class='api-card'>
+        <pre># Pedido
+curl -X POST http://localhost:8080/api/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "owner@arena.com",
+    "password": "123456"
+  }'
+
+# Resposta (200)
+{
+  "ok": true,
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}</pre>
+      </div>
+
+      <h3>Exemplo 2: Carregar mapa + beacons</h3>
+      <div class='api-card'>
+        <pre># Pedido
+curl "http://localhost:8080/api/maps?match_id=12"
+
+# Resposta (200)
+{
+  "ok": true,
+  "arena_id": 3,
+  "count": 1,
+  "maps": [
+    {
+      "id": 7,
+      "arena_id": 3,
+      "floor": 1,
+      "name": "Piso 1",
+      "map_url": "http://localhost:8080/uploads/maps/piso1.png",
+      "width": 186,
+      "height": 500,
+      "beacons": [
+        {
+          "uuid": "fda50693-a4e2-4fb1-afcf-c6eb07647825",
+          "major": 100,
+          "minor": 1,
+          "x": 12.4,
+          "y": 48.9
+        }
+      ]
+    }
+  ]
+}</pre>
+      </div>
+
+      <h3>Exemplo 3: Enviar scan BLE</h3>
+      <div class='api-card'>
+        <pre># Pedido
+curl -X POST http://localhost:8080/api/scan \
+  -H "Authorization: Bearer &lt;TOKEN&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "match_id": 12,
+    "team_id": 121,
+    "player_id": 55,
+    "arena_id": 3,
+    "last_floor": 1,
+    "x": 32.1,
+    "y": 74.0,
+    "readings": [
+      {"uuid":"fda50693-a4e2-4fb1-afcf-c6eb07647825","major":100,"minor":1,"rssi":-67},
+      {"uuid":"fda50693-a4e2-4fb1-afcf-c6eb07647825","major":100,"minor":2,"rssi":-71}
+    ]
+  }'
+
+# Resposta (200)
+{
+  "ok": true,
+  "floor": 1,
+  "confidence": 0.83
+}</pre>
       </div>
     </section>
 

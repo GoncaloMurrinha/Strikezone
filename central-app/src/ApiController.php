@@ -76,6 +76,8 @@ final class ApiController {
     json_out(['error'=>'unauthorized'],401); exit;
   }
   private static function sideFromTeamId(int $matchId, int $teamId): ?string {
+    if ($teamId === 1) return 'A';
+    if ($teamId === 2) return 'B';
     if ($teamId === ($matchId*10 + 1)) return 'A';
     if ($teamId === ($matchId*10 + 2)) return 'B';
     return null;
@@ -226,6 +228,7 @@ final class ApiController {
     if ($arenaId<=0){ json_out(['error'=>'invalid_arena'],422); return; }
     $beaconsRaw = $this->repo->findBeaconsByArena($arenaId);
     $beaconsByFloor = [];
+    $beaconBoundsByFloor = [];
     foreach ($beaconsRaw as $b) {
       if ($b['x'] === null || $b['y'] === null) {
         continue;
@@ -238,9 +241,15 @@ final class ApiController {
         'uuid' => strtolower((string)$b['uuid']),
         'major' => (int)$b['major'],
         'minor' => (int)$b['minor'],
+        'label' => (($label = trim((string)($b['label'] ?? ''))) !== '') ? $label : (string)$b['minor'],
         'x' => (float)$b['x'],
         'y' => (float)$b['y']
       ];
+      if (!isset($beaconBoundsByFloor[$floor])) {
+        $beaconBoundsByFloor[$floor] = ['max_x'=>0.0, 'max_y'=>0.0];
+      }
+      $beaconBoundsByFloor[$floor]['max_x'] = max($beaconBoundsByFloor[$floor]['max_x'], (float)$b['x']);
+      $beaconBoundsByFloor[$floor]['max_y'] = max($beaconBoundsByFloor[$floor]['max_y'], (float)$b['y']);
     }
     $mapsRaw = $this->repo->listMapsByArena($arenaId);
     $maps = [];
@@ -249,6 +258,12 @@ final class ApiController {
       $row['width'] = $row['width'] !== null ? (float)$row['width'] : null;
       $row['height'] = $row['height'] !== null ? (float)$row['height'] : null;
       $floor = (int)($row['floor'] ?? 0);
+      if (($row['width'] === null || $row['width'] <= 0) && isset($beaconBoundsByFloor[$floor]) && $beaconBoundsByFloor[$floor]['max_x'] > 0) {
+        $row['width'] = (float)$beaconBoundsByFloor[$floor]['max_x'];
+      }
+      if (($row['height'] === null || $row['height'] <= 0) && isset($beaconBoundsByFloor[$floor]) && $beaconBoundsByFloor[$floor]['max_y'] > 0) {
+        $row['height'] = (float)$beaconBoundsByFloor[$floor]['max_y'];
+      }
       $row['beacons'] = $beaconsByFloor[$floor] ?? [];
       $maps[] = $row;
     }
