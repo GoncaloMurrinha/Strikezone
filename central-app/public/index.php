@@ -1148,7 +1148,7 @@ echo <<<HTML
         </div>
       </article>
       <article class='feature-card'>
-        <img src='/assets/GestãodeEquipas.png' alt='Gestão de Partidas'>
+        <img src='/assets/GestaodeEquipas.png' alt='Gestão de Partidas'>
         <div class='content'>
           <h3>Gestão de Partidas</h3>
           <p class='muted'>Cria arenas, equipas e códigos de entrada. Mantém o roster sincronizado e regista jogadores em segundos.</p>
